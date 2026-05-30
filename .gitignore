@@ -1,0 +1,9 @@
+.*
+_*
+!.pixi/config.toml
+!.git*
+!.lintr
+!_quarto.yml
+
+/.quarto/
+**/*.quarto_ipynb

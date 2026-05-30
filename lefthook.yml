@@ -1,0 +1,4 @@
+pre-commit:
+  jobs:
+    - run: pixi run lint-r -- {staged_files}
+      glob: "*.{R,r,Rmd,qmd}"

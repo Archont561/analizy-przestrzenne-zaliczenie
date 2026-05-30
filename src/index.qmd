@@ -1,0 +1,17 @@
+---
+title: "Projekt zaliczeinowy"
+---
+
+# Wprowadzenie
+
+Poniżej znajduje się przykładowy kod R w Quarto z użyciem box modułów
+
+```{r}
+#| label: load-helpers
+box::use(./helpers)
+```
+
+```{r}
+print(helpers$greet("użytkowniku"))
+helpers$create_plot(15)
+```

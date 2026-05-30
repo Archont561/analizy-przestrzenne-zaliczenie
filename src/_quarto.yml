@@ -1,0 +1,20 @@
+project:
+  type: website
+  output-dir: ../.cache/_site
+  preview:
+    browser: true
+    port: 4200
+
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    embed-resources: true
+    fig-format: svg
+    theme: flatly
+
+execute:
+  freeze: auto
+  warning: false
+  message: false

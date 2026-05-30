@@ -1,0 +1,56 @@
+[workspace]
+authors = ["Archont561 <esrebrny@tuta.io>"]
+channels = ["conda-forge"]
+name = "zaliczenie"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[dependencies]
+quarto = ">=1.9.38,<2"
+lefthook = ">=2.1.8,<3"
+r-box = ">=1.2.2,<2"
+r-base = ">=4.5.3,<4.6"
+r-irkernel = ">=1.3.2,<2"
+r-lintr = ">=3.3.0_1,<4"
+r-rmarkdown = ">=2.31,<3"
+r-rstac = ">=1.0.1,<2"
+r-ggplot2 = ">=4.0.3,<5"
+r-terra = ">=1.9_25,<2"
+r-sf = ">=1.1_0,<2"
+r-httr2 = ">=1.2.2,<2"
+r-jsonlite = ">=2.0.0,<3"
+r-knitr = ">=1.51,<2"
+r-dplyr = ">=1.2.1,<2"
+r-caret = ">=7.0_1,<8"
+r-xml2 = ">=1.5.2,<2"
+r-httr = ">=1.4.8,<2"
+r-ranger = ">=0.18.0,<0.19"
+r-logger = ">=0.4.2,<0.5"
+
+[tasks]
+lint-r = "Rscript -e 'library(lintr); files <- commandArgs(trailingOnly = TRUE); if (length(files) == 0) files <- list.files(pattern = \"[.](R|r|Rmd|qmd)$\", recursive = TRUE); results <- lapply(files, function(f) if (file.exists(f)) lint(f)); issues <- unlist(results); if (length(issues) > 0) { print(results); quit(status = 1) }'"
+pre-render = """\
+bash -c '\
+mkdir -p .cache/.quarto && \
+mkdir -p .cache/_freeze && \
+ln -snf ../.cache/_freeze src/_freeze && \
+ln -snf ../.cache/.quarto src/.quarto && \
+ln -snf ../.gitignore src/.gitignore\
+'
+"""
+render = "pixi run pre-render && quarto render src/ && pixi run post-render"
+post-render = """\
+bash -c '\
+[ -L src/_freeze ] && rm src/_freeze; \
+[ -L src/.quarto ] && rm src/.quarto; \
+[ -L src/.gitignore ] && rm src/.gitignore; \
+'
+"""
+preview = "pixi run pre-render && quarto preview src/"
+"kernel:install" = "Rscript -e 'IRkernel::installspec(name = \"final-project\")'"
+"kernel:uninstall" = """\
+bash -c 'if command -v jupyter >/dev/null 2>&1; then \
+jupyter kernelspec uninstall final-project -f; \
+else \
+rm -rf ~/.local/share/jupyter/kernels/final-project; \
+fi'"""
