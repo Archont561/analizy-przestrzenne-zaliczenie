@@ -1,0 +1,12 @@
+{
+  "classes": [
+    { "code": "ART", "name": "Artificial surfaces" },
+    { "code": "AGR", "name": "Agriculture" },
+    { "code": "GRA", "name": "Grassland / Herbaceous" },
+    { "code": "FOR", "name": "Forest" },
+    { "code": "SHR", "name": "Shrubland" },
+    { "code": "BAR", "name": "Bare ground / Snow / Sparse vegetation" },
+    { "code": "WET", "name": "Wetlands" },
+    { "code": "WAT", "name": "Water" }
+  ]
+}

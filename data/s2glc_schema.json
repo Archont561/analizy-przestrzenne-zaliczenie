@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LandCoverClass",
+  "type": "object",
+  "properties": {
+    "classId": {
+      "type": "integer",
+      "description": "Unique identifier for the land cover class"
+    },
+    "className": {
+      "type": "string",
+      "description": "Name of the land cover class",
+      "enum": [
+        "Tereny antropogeniczne",
+        "Tereny rolne",
+        "Lasy liściaste",
+        "Lasy iglaste",
+        "Roślinność trawiasta",
+        "Wrzosowiska i zakrzaczenia",
+        "Tereny podmokłe",
+        "Torfowiska",
+        "Tereny naturalne pozbawione roślinności",
+        "Obszary wodne"
+      ]
+    },
+    "color": {
+      "type": "string",
+      "description": "Hex color code as rendered by the POLSA WCS service",
+      "pattern": "^#([A-Fa-f0-9]{6})$"
+    }
+  },
+  "required": ["classId", "className", "color"],
+  "examples": [
+    { "classId": 1, "className": "Tereny antropogeniczne", "color": "#D20000" },
+    { "classId": 2, "className": "Tereny rolne", "color": "#FDD327" },
+    { "classId": 3, "className": "Lasy liściaste", "color": "#239800" },
+    { "classId": 4, "className": "Lasy iglaste", "color": "#086200" },
+    { "classId": 5, "className": "Roślinność trawiasta", "color": "#F99627" },
+    {
+      "classId": 6,
+      "className": "Wrzosowiska i zakrzaczenia",
+      "color": "#A0D67A"
+    },
+    { "classId": 7, "className": "Tereny podmokłe", "color": "#956BC4" },
+    { "classId": 8, "className": "Torfowiska", "color": "#A6A6A6" },
+    {
+      "classId": 9,
+      "className": "Tereny naturalne pozbawione roślinności",
+      "color": "#BEBEBE"
+    },
+    { "classId": 10, "className": "Obszary wodne", "color": "#1445F9" }
+  ]
+}

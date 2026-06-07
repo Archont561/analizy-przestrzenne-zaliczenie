@@ -1,0 +1,12 @@
+{
+  "Tereny antropogeniczne": "ART",
+  "Tereny rolne": "AGR",
+  "Lasy liściaste": "FOR",
+  "Lasy iglaste": "FOR",
+  "Roślinność trawiasta": "GRA",
+  "Wrzosowiska i zakrzaczenia": "SHR",
+  "Tereny podmokłe": "WET",
+  "Torfowiska": "WET",
+  "Tereny naturalne pozbawione roślinności": "BAR",
+  "Obszary wodne": "WAT"
+}

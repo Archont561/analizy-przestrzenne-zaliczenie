@@ -1,0 +1,29 @@
+{
+  "OT_PTZB": "ART",
+  "OT_PTKM": "ART",
+  "OT_PTPL": "ART",
+  "OT_PTSO": "ART",
+  "OT_PTNZ": "ART",
+
+  "OT_PTUT": "AGR",
+  "OT_PTTR(Gr)": "AGR",
+
+  "OT_PTTR(Rt)": "GRA",
+
+  "OT_PTLZ(L)": "FOR",
+  "OT_PTLZ(I)": "FOR",
+  "OT_PTLZ(M)": "FOR",
+
+  "OT_PTRK": "SHR",
+
+  "OT_PTGN": "BAR",
+  "OT_PTWZ": "BAR",
+
+  "OT_OIMK": "WET",
+  "OT_OISZ": "WET",
+
+  "OT_PTWP": "WAT",
+  "OT_SWRS": "WAT",
+  "OT_SWKN": "WAT",
+  "OT_SWRM": "WAT"
+}

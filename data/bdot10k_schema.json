@@ -1,0 +1,1536 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "bdot10k",
+  "title": "BDOT10k – Baza Danych Obiektów Topograficznych 10k",
+  "description": "Complete JSON Schema for the Polish Topographic Object Database at 1:10,000 scale, based on the WODGiK Katowice Vademecum",
+  "type": "object",
+
+  "definitions": {
+
+    "materialNawierzchni": {
+      "type": "string",
+      "enum": ["Bt","Br","Kl","Kk","Kp","Mb","Pb","Tl","Zw","Gr","Gz","T","U","G"],
+      "description": "Bt=beton, Br=bruk, Kl=klinkier, Kk=kostka kamienna, Kp=kostka prefabrykowana, Mb=masa bitumiczna, Pb=płyty betonowe, Tl=tłuczeń, Zw=żwir, Gr=grunt naturalny, Gz=stabilizacja żwirem/żużlem, T=twarda, U=utwardzona, G=gruntowa"
+    },
+
+    "materialKonstrukcji": {
+      "type": "string",
+      "enum": ["Bt","Cg","Dr","Km","St","Zb"],
+      "description": "Bt=beton, Cg=cegła, Dr=drewno, Km=kamień, St=stal, Zb=żelbet"
+    },
+
+    "klasaDrogi": {
+      "type": "string",
+      "enum": ["A","S","GP","G","Z","L","D","I"],
+      "description": "A=autostrada, S=ekspresowa, GP=główna ruchu przyspieszonego, G=główna, Z=zbiorcza, L=lokalna, D=dojazdowa, I=inna"
+    },
+
+    "katZarzadzania": {
+      "type": "string",
+      "enum": ["K","W","P","G","Z","I"],
+      "description": "K=krajowa, W=wojewódzka, P=powiatowa, G=gminna, Z=zakładowa, I=inna"
+    },
+
+    "poziomPolozenia": {
+      "type": "integer",
+      "enum": [-1,0,1,2,3,4],
+      "description": "-1=pod powierzchnią gruntu, 0=na powierzchni, 1-4=poziomy ponad powierzchnią"
+    },
+
+    "katIstnienia": {
+      "type": "string",
+      "enum": ["Eks","Bud","Zns","Tmc","Ncn"],
+      "description": "Eks=eksploatowany, Bud=w budowie, Zns=zniszczony, Tmc=tymczasowy, Ncn=nieczynny"
+    },
+
+    "katDoklGeom": {
+      "type": "string",
+      "enum": ["Dok","Prz","Npw"],
+      "description": "Dok=dokładny, Prz=przybliżony, Npw=niepewny"
+    },
+
+    "rodzajReprGeom": {
+      "type": "string",
+      "enum": ["SG","MC","PU","OG","OI","LU","SL","KR","ZP","ZU","MA","MI","SZ"]
+    },
+
+    "zrodloDanych": {
+      "type": "string",
+      "enum": [
+        "GEOS","EGiB","GESUT","PRG","PRNG","EMUiA","RCiWN","BDO",
+        "Ort","Mz","Mtp10","Mtp50","VMAPL2_v1","VMAPL2_v2",
+        "CORINE","CRFOP","BDD","BDOT500","KSOCH","LMN","MPHP",
+        "PKP","RZAB","TERYT","Str","Trn","TBD"
+      ]
+    },
+
+    "specialValue": {
+      "type": "string",
+      "enum": ["inapplicable","template","unknown","witheld"],
+      "description": "inapplicable=nie stosuje się, template=tymczasowy brak danych, unknown=nieznany, witheld=zastrzeżony"
+    },
+
+    "cyklZycia": {
+      "type": "object",
+      "properties": {
+        "wersjaId":              { "type": "string" },
+        "poczatekWersjiObiektu": { "type": "string", "format": "date-time" },
+        "koniecWersjiObiektu":   { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "commonAttributes": {
+      "type": "object",
+      "description": "Attributes shared by ALL BDOT10k object classes",
+      "properties": {
+        "gml_id":           { "type": "string" },
+        "lokalnyId":        { "type": "string" },
+        "czyObiektBDOO":    { "type": "boolean" },
+        "x_kod":            { "type": "string" },
+        "x_skrKarto":       { "type": "string" },
+        "x_katDoklGeom":    { "$ref": "#/definitions/katDoklGeom" },
+        "x_doklGeom":       { "type": "number" },
+        "x_ZrodloDanychA":  { "$ref": "#/definitions/zrodloDanych" },
+        "x_ZrodloDanychG":  { "$ref": "#/definitions/zrodloDanych" },
+        "x_rodzajReprGeom": { "$ref": "#/definitions/rodzajReprGeom" },
+        "x_uwagi":          { "type": "string" },
+        "x_uzytkownik":     { "type": "string" },
+        "x_aktualnoscG":    { "type": "string", "format": "date" },
+        "x_aktualnoscA":    { "type": "string", "format": "date" },
+        "x_cyklZycia":      { "$ref": "#/definitions/cyklZycia" },
+        "x_dataUtworzenia": { "type": "string", "format": "date-time" },
+        "x_informDodatkowa":{ "type": "string" },
+        "x_kodKarto10k":    { "type": "string" },
+        "x_katIstnienia":   { "$ref": "#/definitions/katIstnienia" },
+        "przestrzenNazw":   { "type": "string" }
+      },
+      "required": ["gml_id","lokalnyId","x_kod"]
+    },
+
+    "OT_PTWP": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":         { "type": "string", "enum": ["Ps","Pp","Pm"] },
+        "poziomWody":     { "type": "number" },
+        "katIstnienia":   { "$ref": "#/definitions/katIstnienia" },
+        "idMPHP":         { "type": "string" },
+        "zbiornikWodny1": { "type": "string" },
+        "ciek2":          { "type": "string" },
+        "PRNG":           { "type": "string" },
+        "BDOT500":        { "type": "string" }
+      }
+    },
+
+    "OT_PTZB": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "charakter":  { "type": "string", "enum": ["Gst","Luz","Zwr"] },
+        "rodzaj":     { "type": "string", "enum": ["Jrd","Wld","Hnd","Pmg","Inn"] },
+        "roslinnosc": { "type": "string", "enum": ["Dr","Tr","Sd","Bl","Br"] },
+        "PRNG":       { "type": "string" }
+      }
+    },
+
+    "OT_PTLZ": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "kategoria":    { "type": "string", "enum": ["L","I","M"] },
+        "rodzaj":       { "type": "string", "enum": ["Las","Zdr","Zag","LZ"] },
+        "gatunekDrzew": { "type": "string", "enum": ["Akc","Brz","Buk","Dgl","Dab","Grb","Jwr","Jsn","Jdl","Kln","Lmb","Lpa","Mdr","Olc","Osk","Ssn","Swr","Tpl","Wiz","Wib"] },
+        "nazwa":        { "type": "string" },
+        "PRNG":         { "type": "string" },
+        "BDOT500":      { "type": "string" }
+      }
+    },
+
+    "OT_PTRK": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":  { "type": "string", "enum": ["RK","Kos","Krz"] },
+        "PRNG":    { "type": "string" },
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_PTUT": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":  { "type": "string", "enum": ["Odz","Pln","Sad","Szl","Szr"] },
+        "gatunek": { "type": "string", "enum": ["Agr","Aro","Brz","Chm","Czr","Grs","Jbl","Mrl","Prz","Slw","Wkl","Win","Wsn","Dig","Dls","Dms"] },
+        "PRNG":    { "type": "string" },
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_PTTR": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Gr","Rt"] },
+        "PRNG":   { "type": "string" },
+        "EGiB":   { "type": "string" }
+      }
+    },
+
+    "OT_PTKM": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Trw","Dkw","Dtr","Ltn","TK"] },
+        "PRNG":   { "type": "string" }
+      }
+    },
+
+    "OT_PTGN": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":  { "type": "string", "enum": ["Psk","Inn","Kam","Skl","GN"] },
+        "PRNG":    { "type": "string" },
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_PTPL": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "materialNawierzchni": { "$ref": "#/definitions/materialNawierzchni" },
+        "ulica5":              { "type": "string", "description": "FK → OT_ulica" },
+        "PRNG":                { "type": "string" },
+        "BDOT500":             { "type": "string" }
+      }
+    },
+
+    "OT_PTSO": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Odk","Odp","SO"] },
+        "PRNG":   { "type": "string" }
+      }
+    },
+
+    "OT_PTWZ": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":   { "type": "string", "enum": ["Wrb","Zwl"] },
+        "surowiec": { "type": "string", "enum": ["Gl","Km","Md","Pk","Co","Sr","Tf","Wb","Wp","Zw"] },
+        "PRNG":     { "type": "string" }
+      }
+    },
+
+    "OT_PTNZ": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Tps","Urz","TN"] },
+        "PRNG":   { "type": "string" }
+      }
+    },
+
+    "OT_KUMN": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Pss","Osd"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUPG": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Elc","Elw","Gaz","Ghd","Hut","Kpl","Ocs","Pel","Prz","Sdp","Zpr","Zut","Zwd","Tuw","Zmt","Rfn"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUHU": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Chu","Trg"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUKO": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Dau","Prk","Skl","Spl","Zjz","Lot","Pwd","Tkl","Smt","Mop"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUSK": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Obt","Ozl","Osr","Prk","Zdl"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUHO": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Hmt","Owp","Kmp","Sct"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUOS": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Szk","Szw","Pzl","Ond"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUOZ": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Zsz","Zop"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUZA": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Zpl","Mpn","Zmz","Zzm","Skn","Twf"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_KUSC": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":  { "type": "string", "enum": ["Cmt","Zsk"] },
+        "nazwa":   { "type": "string" },
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_KUIK": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Pwk","Zsp"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_SWRS": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "okresowosc":         { "type": "boolean" },
+        "rodzaj":             { "type": "string", "enum": ["Rz","St","RS"] },
+        "polozenie":          { "type": "integer", "enum": [0,1] },
+        "szerokosc":          { "type": "number" },
+        "przebieg":           { "type": "string", "enum": ["Cgl","Rbc"] },
+        "statusEksploatacji": { "type": "string", "enum": ["Z","NZ"] },
+        "idMPHP":             { "type": "string" },
+        "ciek1":              { "type": "string", "description": "FK → OT_Ciek" }
+      }
+    },
+
+    "OT_SWKN": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "okresowosc":         { "type": "boolean" },
+        "przebieg":           { "type": "string", "enum": ["Cgl","Rbc"] },
+        "statusEksploatacji": { "type": "string", "enum": ["Z","NZ"] },
+        "polozenie":          { "type": "integer", "enum": [0,1] },
+        "szerokosc":          { "type": "number" },
+        "idMPHP":             { "type": "string" },
+        "ciek1":              { "type": "string" }
+      }
+    },
+
+    "OT_SWRM": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":    { "type": "string", "enum": ["Rzb","Rzw","RM"] },
+        "polozenie": { "type": "integer", "enum": [0,1] },
+        "szerokosc": { "type": "number" },
+        "idMPHP":    { "type": "string" },
+        "ciek1":     { "type": "string" },
+        "BDOT500":   { "type": "string" }
+      }
+    },
+
+    "OT_SKJZ": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "polozenie":           { "$ref": "#/definitions/poziomPolozenia" },
+        "szerNawierzchni":     { "type": "number" },
+        "szerKoronyDrogi":     { "type": "number" },
+        "liczbaPasow":         { "type": "integer" },
+        "ulica":               { "type": "boolean" },
+        "materialNawierzchni": { "$ref": "#/definitions/materialNawierzchni" },
+        "liczbaJezdniDrogi":   { "type": "integer" },
+        "nazwaDrogi":          { "type": "string" },
+        "klasaDrogi":          { "$ref": "#/definitions/klasaDrogi" },
+        "katZarzadzania":      { "$ref": "#/definitions/katZarzadzania" },
+        "skdr_l1":             { "type": "string", "description": "FK → OT_SKDR" },
+        "BDOT500":             { "type": "string" },
+        "ulica3":              { "type": "string", "description": "FK → OT_ulica" },
+        "gml_ID":              { "type": "string", "description": "FK → OT_SzlakDrogowy via intJezdnSzlak" }
+      }
+    },
+
+    "OT_SKDR": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "materialNawierzchni":     { "$ref": "#/definitions/materialNawierzchni" },
+        "liczbaJezdniDrogi":       { "type": "integer" },
+        "nazwaDrogi":              { "type": "string" },
+        "nrOdcinkaReferencyjnego": { "type": "string" },
+        "skjz_l2":                 { "type": "string" },
+        "klasaDrogi":              { "$ref": "#/definitions/klasaDrogi" },
+        "katZarzadzania":          { "$ref": "#/definitions/katZarzadzania" },
+        "gml_ID":                  { "type": "string", "description": "FK → OT_SzlakDrogowy via intDrogaSzlak" }
+      }
+    },
+
+    "OT_SKRW": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "nazwa":             { "type": "string" },
+        "nrWezlaDrogowego":  { "type": "string" },
+        "typWezlaDrogowego": { "type": "string", "enum": ["Rd","Wa","Wb","Wc"] }
+      }
+    },
+
+    "OT_SKRP": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "klasaCiaguRuchuPieszego": { "type": "string", "enum": ["Ap","Pm","Sc"] },
+        "polozenie":               { "$ref": "#/definitions/poziomPolozenia" },
+        "materialNawierzchni":     { "$ref": "#/definitions/materialNawierzchni" },
+        "ruchRowerowy":            { "type": "string", "enum": ["Wc","Dp","Ndp"] },
+        "ulica2":                  { "type": "string", "description": "FK → OT_ulica" },
+        "nazwa":                   { "type": "string" },
+        "szerokosc":               { "type": "number" },
+        "schody":                  { "type": "boolean" },
+        "BDOT500":                 { "type": "string" }
+      }
+    },
+
+    "OT_SKTR": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "funkcjaToru":            { "type": "string", "enum": ["Tsz","Tss","Tzs","TS","Bcz"] },
+        "liczbaTorow":            { "type": "integer" },
+        "polozenie":              { "$ref": "#/definitions/poziomPolozenia" },
+        "rodzajTorow":            { "type": "string", "enum": ["Tn","Tw","Ts"] },
+        "rodzajPojazduSzynowego": { "type": "string", "enum": ["Kol","Mtr","Trm"] },
+        "rodzajTrakcji":          { "type": "string", "enum": ["Z","NZ"] },
+        "gml_ID":                 { "type": "string", "description": "FK → OT_LiniaKolejowa via intTorLinia" },
+        "BDOT500":                { "type": "string" }
+      }
+    },
+
+    "OT_SKPP": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":          { "type": "string", "enum": ["Br","Ld","Pr"] },
+        "funTransportowa": { "type": "string", "enum": ["Psz","Sam","Tos","Tow"] },
+        "BDOT500":         { "type": "string" }
+      }
+    },
+
+    "OT_SULN": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["NN","WN","SN","n/n","LTK"] },
+        "GESUT":  { "type": "string" }
+      }
+    },
+
+    "OT_SUPR": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":     { "type": "string", "enum": ["B","C","G","K","N","W"] },
+        "polozenie":  { "type": "string", "enum": ["Nzp","Nzz","Nzm","Pdz"] },
+        "srPrzewodu": { "type": "number" },
+        "GESUT":      { "type": "string" }
+      }
+    },
+
+    "OT_BUBD": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "funOgolnaBudynku": {
+          "type": "string",
+          "enum": ["1110","1121","1122","1130","1211","1212","1220","1230","1241","1242","1251","1252","1261","1262","1263","1264","1265","1271","1272","1273","1274"]
+        },
+        "funSzczegolowaBudynku": {
+          "type": "string",
+          "enum": [
+            "1110.Dj","1110.Dl","1110.Ls",
+            "1121.Db","1122.Dw",
+            "1130.Bs","1130.Db","1130.Dd","1130.Os","1130.Dp","1130.Ds","1130.Dz","1130.Hr","1130.In","1130.Kl","1130.Km","1130.Po","1130.Ra","1130.Rb","1130.Rp","1130.Zk","1130.Zp",
+            "1211.Dw","1211.Ht","1211.Mt","1211.Pj","1211.Rj","1211.Zj",
+            "1212.Dk","1212.Dr","1212.Dw","1212.Os","1212.St",
+            "1220.Bk","1220.Ck","1220.Km","1220.Mn","1220.Pd","1220.Pc","1220.Pk","1220.Pg","1220.Sd","1220.Sf","1220.Pw","1220.Sg","1220.Sp","1220.Uc","1220.Ug","1220.Um","1220.Umg","1220.Mr","1220.Up","1220.Uw","1220.Ap",
+            "1230.Ap","1230.Ch","1230.Dh","1230.Ht","1230.Hw","1230.Hm","1230.Ph","1230.So","1230.Sp",
+            "1241.Kk","1241.Kp","1241.Ct","1241.Da","1241.Dk","1241.Dl","1241.Hg","1241.Lm","1241.Lk","1241.Kg","1241.Rt","1241.Tp","1241.Ab","1241.Tr","1241.Tb",
+            "1242.Gr","1242.Pw",
+            "1251.El","1251.Ek","1251.Kt","1251.Mn","1251.Pr","1251.Rf","1251.Ss","1251.Wr","1251.Wt",
+            "1252.Sp","1252.Ch","1252.El","1252.Mg","1252.Sl","1252.Gz","1252.Ci",
+            "1261.Oz","1261.Dk","1261.Fh","1261.Hw","1261.Ks","1261.Kn","1261.Kl","1261.Op","1261.Sz","1261.Tt",
+            "1262.Ar","1262.Bl","1262.Ci","1262.Gs","1262.Mz",
+            "1263.Ob","1263.Pb","1263.Ps","1263.Sh","1263.Sm","1263.Sp","1263.Sd","1263.Sw",
+            "1264.Hs","1264.Iw","1264.Jr","1264.Kw","1264.Oo","1264.Po","1264.St","1264.Sk","1264.Ss","1264.Sz","1264.Zb",
+            "1265.Hs","1265.Ht","1265.Ks","1265.Kt","1265.Kr","1265.Pl","1265.Sg","1265.St","1265.Sl","1265.Uj",
+            "1271.Bg","1271.Bp","1271.St","1271.Sz",
+            "1272.Bc","1272.Ck","1272.Dp","1272.Dz","1272.Ir","1272.Kp","1272.Ks","1272.Kr","1272.Mc","1272.Sn",
+            "1273.Zb",
+            "1274.As","1274.Bc","1274.Sc","1274.Sg","1274.Sp","1274.St","1274.Tp","1274.Zk","1274.Zp"
+          ]
+        },
+        "liczbaKondygnacji": { "type": "integer", "minimum": 1 },
+        "nazwa":             { "type": "string" },
+        "zabytek":           { "type": "boolean" },
+        "gml_ID":            { "type": "string", "description": "FK → intBUBDFunSz" },
+        "kodKST":            { "type": "string" }
+      }
+    },
+
+    "OT_BUIN": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":                       { "type": "string", "enum": ["e","w","k","m","d","p","t"] },
+        "materialKonstrukcyjnyPodpor":  { "$ref": "#/definitions/materialKonstrukcji" },
+        "materialKonstrukcyjnyPomostu": { "$ref": "#/definitions/materialKonstrukcji" },
+        "konstrukcja":                  { "type": "string", "enum": ["Blk","Luk","Obt","Pws","Wsc","Inn"] },
+        "dlugosc":                      { "type": "number" },
+        "wysokosc":                     { "type": "number" },
+        "szerokosc":                    { "type": "number" },
+        "nosnosc":                      { "type": "number" },
+        "nazwa":                        { "type": "string" },
+        "nrEwidencyjnyZarzaduDrog":     { "type": "string" },
+        "rodzajKomunikacji":            { "type": "string", "enum": ["dr","kl","tr"] },
+        "mobilnoscPrzesla":             { "type": "boolean" },
+        "liczbaPoziomow":               { "type": "integer", "enum": [1,2] },
+        "BDOT500":                      { "type": "string" }
+      }
+    },
+
+    "OT_BUHD": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":               { "type": "string", "enum": ["Jry","Jsy","Slz","Zap","JZ"] },
+        "poziomWodyMaksymalny": { "type": "number" },
+        "poziomWodyMinimalny":  { "type": "number" },
+        "wysokoscKoronyZapory": { "type": "number" },
+        "BDOT500":              { "type": "string" }
+      }
+    },
+
+    "OT_BUSP": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":  { "type": "string", "enum": ["Bdk","Bcf","Bzn","Ktn","Kcf","Pgz","Psp","Snr","Std","Sst","Tsm","Tsn","Tzz"] },
+        "nazwa":   { "type": "string" },
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_BUWT": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":   { "type": "string", "enum": ["Ckm","Kmn","Mos","Mtl","Twt","Sen","Pkl","Wcs","Wpp","Wsk","Wtl","Wdk"] },
+        "wysokosc": { "type": "number" },
+        "BDOT500":  { "type": "string" }
+      }
+    },
+
+    "OT_BUZT": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":               { "type": "string", "enum": ["Osd","Zcc","Zmp","Zms"] },
+        "gromadzonaSubstancja": { "type": "string", "enum": ["Bnz","Cmn","Gzm","Psz","Rpa","Wod","Zbz"] },
+        "rodzajKonstrukcji":    { "type": "string", "enum": ["Bsn","Cld","Kls","Pkl","Zso"] },
+        "BDOT500":              { "type": "string" }
+      }
+    },
+
+    "OT_BUUO": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":   { "type": "string", "enum": ["Flc","Ost","Sop","Ubr"] },
+        "material": { "type": "string", "enum": ["Btn","Kam","Pdr","Pbt","Pst"] },
+        "wysokosc": { "type": "number" },
+        "BDOT500":  { "type": "string" }
+      }
+    },
+
+    "OT_BUZM": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":         { "type": "string", "enum": ["F","N","W"] },
+        "material":       { "type": "string", "enum": ["Bt","Gr"] },
+        "szerKorony":     { "type": "number" },
+        "szerPodstawy":   { "type": "number" },
+        "wysokosc":       { "type": "number" },
+        "zbiornikWodny2": { "type": "string", "description": "FK → OT_ZbiornikWodny" },
+        "ciek3":          { "type": "string", "description": "FK → OT_Ciek" },
+        "BDOT500":        { "type": "string" }
+      }
+    },
+
+    "OT_BUTR": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":    { "type": "string", "enum": ["Kln","Okl","Suw","Tsm","Wnr"] },
+        "dlugosc":   { "type": "number" },
+        "szerokosc": { "type": "number" },
+        "BDOT500":   { "type": "string" }
+      }
+    },
+
+    "OT_BUIT": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Sng","Uwd","Trn","Ztr","Zdp","Zum","Zrp"] },
+        "GESUT":  { "type": "string" }
+      }
+    },
+
+    "OT_BUCM": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":   { "type": "string", "enum": ["Kom","Wjn","Wzn","Zwr"] },
+        "wyznanie": { "type": "integer", "enum": [0,1], "description": "1=chrześcijańskie, 0=inne" },
+        "BDOT500":  { "type": "string" }
+      }
+    },
+
+    "OT_BUIB": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":  { "type": "string", "enum": ["Est","Ogr","Prn","Pfw","Rmp","Trb"] },
+        "EGiB":    { "type": "string" },
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_OIPR": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":         { "type": "string", "enum": ["Dwo","Lod","Rdr","Zwp","Gnr","Kko","Kkr","Osk","Mls","Psk","Wdj","Wds","Zrd"] },
+        "nazwa":          { "type": "string" },
+        "pomnikPrzyrody": { "type": "boolean" }
+      }
+    },
+
+    "OT_OIKM": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj": { "type": "string", "enum": ["Eka","Pst","Pgr","Pat","Pkl","Sch","Swt","Wmt","Mpo"] },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_OIOR": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":    { "type": "string", "enum": ["Pom","Bun","Fgk","Ftn","Mhi","Mog","Pmn","Rzb","Sgl","Skl","Wal","Wtr","Wwk","Wdw"] },
+        "nazwa":     { "type": "string" },
+        "szerokosc": { "type": "number" }
+      }
+    },
+
+    "OT_OIMK": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "rodzaj":  { "type": "string", "enum": ["Bg","Pd","MO"] },
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_OISZ": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "BDOT500": { "type": "string" }
+      }
+    },
+
+    "OT_ADJA": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "idPRG":                      { "type": "string" },
+        "idTerytJednostkiNadrzednej": { "type": "string" },
+        "idTerytTerc":                { "type": "string" },
+        "rodzaj":   { "type": "string", "enum": ["Pns","Woj","Pow","GM","GW","Gmw","CmG","CwG","Dzl","Dlg"] },
+        "nazwa":    { "type": "string" },
+        "adms_a3":  { "type": "string", "description": "FK → OT_ADMS" },
+        "PRG":      { "type": "string" }
+      }
+    },
+
+    "OT_ADMS": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "nazwa":               { "type": "string" },
+        "idPRNG":              { "type": "string" },
+        "idTerytGmi":          { "type": "string" },
+        "idTerytMiejsc":       { "type": "string" },
+        "rodzaj":              { "type": "string", "enum": ["Ms","CMs","Ws","CWs","Kl","CKl","Osd","COsd","Osl","Prz","Ls","Gj","Inn"] },
+        "liczbaMieszkancow":   { "type": "integer", "minimum": 0 },
+        "siedzibaUrzeduGminy": { "type": "boolean" },
+        "adja_a3":             { "type": "string", "description": "FK → OT_ADJA" },
+        "EMUiA":               { "type": "string" },
+        "PRNG":                { "type": "string" }
+      }
+    },
+
+    "OT_TCON": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "nazwa":    { "type": "string" },
+        "idKSOCH": { "type": "string" },
+        "PRNG":    { "type": "string" },
+        "idNatura":{ "type": "string" }
+      }
+    },
+
+    "OT_TCPK": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "nazwa":   { "type": "string" },
+        "idKSOCH": { "type": "string" },
+        "PRNG":    { "type": "string" }
+      }
+    },
+
+    "OT_TCPN": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "nazwa":   { "type": "string" },
+        "idKSOCH": { "type": "string" },
+        "PRNG":    { "type": "string" }
+      }
+    },
+
+    "OT_TCRZ": {
+      "allOf": [{ "$ref": "#/definitions/commonAttributes" }],
+      "properties": {
+        "nazwa":   { "type": "string" },
+        "idKSOCH": { "type": "string" },
+        "PRNG":    { "type": "string" },
+        "rodzaj":  { "type": "string", "enum": ["Ls","Wd","St","Sl","Fn","Fl","Tf","Pn","Kr"] }
+      }
+    },
+
+    "OT_ulica": {
+      "type": "object",
+      "description": "Lookup: wykaz nazw ulic",
+      "properties": {
+        "idTerytUlic":          { "type": "string" },
+        "kodUlicyGm":           { "type": "string" },
+        "nazwa1":               { "type": "string" },
+        "nazwa2":               { "type": "string" },
+        "przedrostek1":         { "type": "string" },
+        "przedrostek2":         { "type": "string" },
+        "adms_a4":              { "type": "string", "description": "FK → OT_ADMS" },
+        "EMUiA":                { "type": "string" },
+        "EMUiA_przestrzenNazw": { "type": "string" }
+      },
+      "required": ["idTerytUlic","nazwa1"]
+    },
+
+    "OT_WezelKolejowy": {
+      "type": "object",
+      "description": "Lookup: wykaz węzłów kolejowych",
+      "properties": {
+        "oznaczenie": { "type": "string" },
+        "nazwa":      { "type": "string" },
+        "nrWezla":    { "type": "string" }
+      },
+      "required": ["nrWezla"]
+    },
+
+    "OT_ZbiornikWodny": {
+      "type": "object",
+      "description": "Lookup: wykaz nazw zbiorników wodnych",
+      "properties": {
+        "idPRNG": { "type": "string" },
+        "nazwa":  { "type": "string" }
+      }
+    },
+
+    "OT_SzlakDrogowy": {
+      "type": "object",
+      "description": "Lookup: wykaz numerów szlaków drogowych",
+      "properties": {
+        "numer": { "type": "string" }
+      },
+      "required": ["numer"]
+    },
+
+    "OT_LiniaKolejowa": {
+      "type": "object",
+      "description": "Lookup: wykaz numerów linii kolejowych",
+      "properties": {
+        "nrLinii":        { "type": "string" },
+        "wezelKolejowy1": { "type": "string", "description": "FK → OT_WezelKolejowy" },
+        "wezelKolejowy2": { "type": "string", "description": "FK → OT_WezelKolejowy" }
+      },
+      "required": ["nrLinii"]
+    },
+
+    "OT_Ciek": {
+      "type": "object",
+      "description": "Lookup: wykaz nazw cieków",
+      "properties": {
+        "idPRNG":  { "type": "string" },
+        "nazwa":   { "type": "string" },
+        "dlugosc": { "type": "number" },
+        "PRNG":    { "type": "string" }
+      }
+    },
+
+    "intTorLinia": {
+      "type": "object",
+      "description": "Intersection: odcinki torów ↔ numery linii kolejowych",
+      "properties": {
+        "sktr_l1": { "type": "string", "description": "FK → OT_SKTR" },
+        "nrLinii": { "type": "string", "description": "FK → OT_LiniaKolejowa" }
+      },
+      "required": ["sktr_l1","nrLinii"]
+    },
+
+    "intJezdnSzlak": {
+      "type": "object",
+      "description": "Intersection: odcinki jezdni ↔ numery szlaków drogowych",
+      "properties": {
+        "skjz_l1": { "type": "string", "description": "FK → OT_SKJZ" },
+        "numerDr":  { "type": "string", "description": "FK → OT_SzlakDrogowy" }
+      },
+      "required": ["skjz_l1","numerDr"]
+    },
+
+    "intDrogaSzlak": {
+      "type": "object",
+      "description": "Intersection: odcinki dróg ↔ numery szlaków drogowych",
+      "properties": {
+        "skdr_l1": { "type": "string", "description": "FK → OT_SKDR" },
+        "numer":   { "type": "string", "description": "FK → OT_SzlakDrogowy" }
+      },
+      "required": ["skdr_l1","numer"]
+    },
+
+    "intDrogaJezdnia": {
+      "type": "object",
+      "description": "Intersection: odcinki jezdni ↔ odcinki dróg",
+      "properties": {
+        "skjz_l1": { "type": "string", "description": "FK → OT_SKJZ" },
+        "skdr_l1": { "type": "string", "description": "FK → OT_SKDR" }
+      },
+      "required": ["skjz_l1","skdr_l1"]
+    },
+
+    "intBUBDFunSz": {
+      "type": "object",
+      "description": "Intersection: budynki ↔ dodatkowe funkcje szczegółowe",
+      "properties": {
+        "gml_id": { "type": "string", "description": "FK → OT_BUBD" },
+        "Kod":    { "type": "string", "description": "kod funkcji szczegółowej budynku" }
+      },
+      "required": ["gml_id","Kod"]
+    }
+  },
+
+  "properties": {
+
+    "classification": {
+      "type": "array",
+      "description": "Full three-level BDOT10k object classification",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level1Code": { "type": "string" },
+          "level1Name": { "type": "string" },
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "level2Code": { "type": "string" },
+                "level2Name": { "type": "string" },
+                "objects": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "level3Code": { "type": "string" },
+                      "level3Name": { "type": "string" }
+                    },
+                    "required": ["level3Code","level3Name"]
+                  }
+                }
+              },
+              "required": ["level2Code","level2Name","objects"]
+            }
+          }
+        },
+        "required": ["level1Code","level1Name","classes"]
+      },
+      "default": [
+        {
+          "level1Code": "SW", "level1Name": "sieć wodna",
+          "classes": [
+            { "level2Code": "SWRS", "level2Name": "rzeka i strumień",
+              "objects": [{ "level3Code": "SWRS01","level3Name": "rzeka" },{ "level3Code": "SWRS02","level3Name": "strumień, potok lub struga" }] },
+            { "level2Code": "SWKN", "level2Name": "kanał",
+              "objects": [{ "level3Code": "SWKN01","level3Name": "kanał" }] },
+            { "level2Code": "SWRM", "level2Name": "rów melioracyjny",
+              "objects": [{ "level3Code": "SWRM01","level3Name": "rów melioracyjny zbiorczy" },{ "level3Code": "SWRM02","level3Name": "rów melioracyjny zwykły" }] }
+          ]
+        },
+        {
+          "level1Code": "SK", "level1Name": "sieć komunikacyjna",
+          "classes": [
+            { "level2Code": "SKJZ", "level2Name": "jezdnia",
+              "objects": [
+                {"level3Code":"SKJZ01","level3Name":"jezdnia autostrady"},
+                {"level3Code":"SKJZ02","level3Name":"jezdnia drogi ekspresowej"},
+                {"level3Code":"SKJZ03","level3Name":"jezdnia drogi głównej ruchu przyśpieszonego"},
+                {"level3Code":"SKJZ04","level3Name":"jezdnia drogi głównej"},
+                {"level3Code":"SKJZ05","level3Name":"jezdnia drogi zbiorczej"},
+                {"level3Code":"SKJZ06","level3Name":"jezdnia drogi lokalnej"},
+                {"level3Code":"SKJZ07","level3Name":"jezdnia drogi dojazdowej"},
+                {"level3Code":"SKJZ08","level3Name":"jezdnia drogi innej"}
+              ]
+            },
+            { "level2Code": "SKDR", "level2Name": "droga",
+              "objects": [
+                {"level3Code":"SKDR01","level3Name":"autostrada"},
+                {"level3Code":"SKDR02","level3Name":"droga ekspresowa"},
+                {"level3Code":"SKDR03","level3Name":"droga główna ruchu przyśpieszonego"},
+                {"level3Code":"SKDR04","level3Name":"droga główna"},
+                {"level3Code":"SKDR05","level3Name":"droga zbiorcza"},
+                {"level3Code":"SKDR06","level3Name":"droga lokalna"},
+                {"level3Code":"SKDR07","level3Name":"droga dojazdowa"},
+                {"level3Code":"SKDR08","level3Name":"droga inna"}
+              ]
+            },
+            { "level2Code": "SKRW", "level2Name": "rondo i węzeł drogowy",
+              "objects": [{"level3Code":"SKRW01","level3Name":"rondo"},{"level3Code":"SKRW02","level3Name":"węzeł drogowy"}] },
+            { "level2Code": "SKRP", "level2Name": "ciąg ruchu pieszego i rowerowego",
+              "objects": [{"level3Code":"SKRP01","level3Name":"alejka"},{"level3Code":"SKRP02","level3Name":"pasaż"},{"level3Code":"SKRP03","level3Name":"ścieżka"}] },
+            { "level2Code": "SKTR", "level2Name": "tor lub zespół torów",
+              "objects": [{"level3Code":"SKTR01","level3Name":"tor kolejowy"},{"level3Code":"SKTR02","level3Name":"tor metra"},{"level3Code":"SKTR03","level3Name":"tor tramwajowy"}] },
+            { "level2Code": "SKPP", "level2Name": "przeprawa",
+              "objects": [{"level3Code":"SKPP01","level3Name":"bród"},{"level3Code":"SKPP02","level3Name":"przeprawa łodziami"},{"level3Code":"SKPP03","level3Name":"przeprawa promowa"}] }
+          ]
+        },
+        {
+          "level1Code": "SU", "level1Name": "sieć uzbrojenia terenu",
+          "classes": [
+            { "level2Code": "SULN", "level2Name": "linia napowietrzna",
+              "objects": [
+                {"level3Code":"SULN01","level3Name":"linia elektroenergetyczna najwyższego napięcia"},
+                {"level3Code":"SULN02","level3Name":"linia elektroenergetyczna wysokiego napięcia"},
+                {"level3Code":"SULN03","level3Name":"linia elektroenergetyczna średniego napięcia"},
+                {"level3Code":"SULN04","level3Name":"linia elektroenergetyczna niskiego napięcia"},
+                {"level3Code":"SULN05","level3Name":"linia telekomunikacyjna"}
+              ]
+            },
+            { "level2Code": "SUPR", "level2Name": "przewód rurowy",
+              "objects": [
+                {"level3Code":"SUPR01","level3Name":"benzynowy"},
+                {"level3Code":"SUPR02","level3Name":"ciepłowniczy"},
+                {"level3Code":"SUPR03","level3Name":"gazowy"},
+                {"level3Code":"SUPR04","level3Name":"kanalizacyjny"},
+                {"level3Code":"SUPR05","level3Name":"naftowy"},
+                {"level3Code":"SUPR06","level3Name":"wodociągowy"}
+              ]
+            }
+          ]
+        },
+        {
+          "level1Code": "PT", "level1Name": "pokrycie terenu",
+          "classes": [
+            { "level2Code": "PTWP", "level2Name": "woda powierzchniowa",
+              "objects": [{"level3Code":"PTWP01","level3Name":"woda morska"},{"level3Code":"PTWP02","level3Name":"woda płynąca"},{"level3Code":"PTWP03","level3Name":"woda stojąca"}] },
+            { "level2Code": "PTZB", "level2Name": "zabudowa",
+              "objects": [
+                {"level3Code":"PTZB01","level3Name":"zabudowa wielorodzinna"},
+                {"level3Code":"PTZB02","level3Name":"zabudowa jednorodzinna"},
+                {"level3Code":"PTZB03","level3Name":"zabudowa przemysłowo-składowa"},
+                {"level3Code":"PTZB04","level3Name":"zabudowa handlowo-usługowa"},
+                {"level3Code":"PTZB05","level3Name":"pozostała zabudowa"}
+              ]
+            },
+            { "level2Code": "PTLZ", "level2Name": "teren leśny i zadrzewiony",
+              "objects": [{"level3Code":"PTLZ01","level3Name":"las"},{"level3Code":"PTLZ02","level3Name":"zagajnik"},{"level3Code":"PTLZ03","level3Name":"zadrzewienie"}] },
+            { "level2Code": "PTRK", "level2Name": "roślinność krzewiasta",
+              "objects": [{"level3Code":"PTRK01","level3Name":"kosodrzewina"},{"level3Code":"PTRK02","level3Name":"krzewy"}] },
+            { "level2Code": "PTUT", "level2Name": "uprawa trwała",
+              "objects": [
+                {"level3Code":"PTUT01","level3Name":"ogród działkowy"},
+                {"level3Code":"PTUT02","level3Name":"plantacja"},
+                {"level3Code":"PTUT03","level3Name":"sad"},
+                {"level3Code":"PTUT04","level3Name":"szkółka leśna"},
+                {"level3Code":"PTUT05","level3Name":"szkółka roślin ozdobnych"}
+              ]
+            },
+            { "level2Code": "PTTR", "level2Name": "roślinność trawiasta i uprawa rolna",
+              "objects": [{"level3Code":"PTTR01","level3Name":"roślinność trawiasta"},{"level3Code":"PTTR02","level3Name":"uprawa na gruntach ornych"}] },
+            { "level2Code": "PTKM", "level2Name": "teren pod drogami kołowymi, szynowymi i lotniskowymi",
+              "objects": [
+                {"level3Code":"PTKM01","level3Name":"teren pod drogą kołową"},
+                {"level3Code":"PTKM02","level3Name":"teren pod torowiskiem"},
+                {"level3Code":"PTKM03","level3Name":"teren pod drogą kołową i torowiskiem"},
+                {"level3Code":"PTKM04","level3Name":"teren pod drogą lotniskową"}
+              ]
+            },
+            { "level2Code": "PTGN", "level2Name": "grunt nieużytkowany",
+              "objects": [
+                {"level3Code":"PTGN01","level3Name":"piarg, usypisko lub rumowisko skalne"},
+                {"level3Code":"PTGN02","level3Name":"teren kamienisty"},
+                {"level3Code":"PTGN03","level3Name":"teren piaszczysty lub żwirowy"},
+                {"level3Code":"PTGN04","level3Name":"pozostały grunt nieużytkowany"}
+              ]
+            },
+            { "level2Code": "PTPL", "level2Name": "plac",
+              "objects": [{"level3Code":"PTPL01","level3Name":"Plac"}] },
+            { "level2Code": "PTSO", "level2Name": "składowisko odpadów",
+              "objects": [{"level3Code":"PTSO01","level3Name":"teren składowania odpadów komunalnych"},{"level3Code":"PTSO02","level3Name":"teren składowania odpadów przemysłowych"}] },
+            { "level2Code": "PTWZ", "level2Name": "wyrobisko i zwałowisko",
+              "objects": [{"level3Code":"PTWZ01","level3Name":"wyrobisko"},{"level3Code":"PTWZ02","level3Name":"zwałowisko"}] },
+            { "level2Code": "PTNZ", "level2Name": "pozostały teren niezabudowany",
+              "objects": [{"level3Code":"PTNZ01","level3Name":"teren pod urządzeniami technicznymi lub budowlami"},{"level3Code":"PTNZ02","level3Name":"teren przemysłowo-składowy"}] }
+          ]
+        },
+        {
+          "level1Code": "BU", "level1Name": "budynki, budowle i urządzenia",
+          "classes": [
+            { "level2Code": "BUBD", "level2Name": "budynek",
+              "objects": [
+                {"level3Code":"BUBD01","level3Name":"budynki mieszkalne jednorodzinne"},
+                {"level3Code":"BUBD02","level3Name":"budynki o dwóch mieszkaniach"},
+                {"level3Code":"BUBD03","level3Name":"budynki o trzech i więcej mieszkaniach"},
+                {"level3Code":"BUBD04","level3Name":"budynki zbiorowego zamieszkania"},
+                {"level3Code":"BUBD05","level3Name":"budynki hoteli"},
+                {"level3Code":"BUBD06","level3Name":"budynki zakwaterowania turystycznego, pozostałe"},
+                {"level3Code":"BUBD07","level3Name":"budynki biurowe"},
+                {"level3Code":"BUBD08","level3Name":"budynki handlowo-usługowe"},
+                {"level3Code":"BUBD09","level3Name":"budynki łączności, dworców i terminali"},
+                {"level3Code":"BUBD10","level3Name":"budynki garaży"},
+                {"level3Code":"BUBD11","level3Name":"budynki przemysłowe"},
+                {"level3Code":"BUBD12","level3Name":"zbiorniki, silosy i budynki magazynowe"},
+                {"level3Code":"BUBD13","level3Name":"ogólnodostępne obiekty kulturalne"},
+                {"level3Code":"BUBD14","level3Name":"budynki muzeów i bibliotek"},
+                {"level3Code":"BUBD15","level3Name":"budynki szkół i instytucji badawczych"},
+                {"level3Code":"BUBD16","level3Name":"budynki szpitali i zakładów opieki medycznej"},
+                {"level3Code":"BUBD17","level3Name":"budynki kultury fizycznej"},
+                {"level3Code":"BUBD18","level3Name":"budynki gospodarstw rolnych"},
+                {"level3Code":"BUBD19","level3Name":"budynki przeznaczone do sprawowania kultu religijnego i czynności religijnych"},
+                {"level3Code":"BUBD20","level3Name":"obiekty budowlane wpisane do rejestru zabytków"},
+                {"level3Code":"BUBD21","level3Name":"pozostałe budynki niemieszkalne, gdzie indziej nie wymienione"}
+              ]
+            },
+            { "level2Code": "BUIN", "level2Name": "budowla inżynierska",
+              "objects": [
+                {"level3Code":"BUIN01","level3Name":"estakada"},{"level3Code":"BUIN02","level3Name":"kładka dla pieszych"},
+                {"level3Code":"BUIN03","level3Name":"most"},{"level3Code":"BUIN04","level3Name":"przejście podziemne dla pieszych"},
+                {"level3Code":"BUIN05","level3Name":"przepust"},{"level3Code":"BUIN06","level3Name":"tunel"},
+                {"level3Code":"BUIN07","level3Name":"wiadukt"}
+              ]
+            },
+            { "level2Code": "BUHD", "level2Name": "budowla hydrotechniczna",
+              "objects": [
+                {"level3Code":"BUHD01","level3Name":"jaz ruchomy lub zastawka piętrząca"},
+                {"level3Code":"BUHD02","level3Name":"jaz stały"},
+                {"level3Code":"BUHD03","level3Name":"śluza"},
+                {"level3Code":"BUHD04","level3Name":"zapora"}
+              ]
+            },
+            { "level2Code": "BUSP", "level2Name": "budowla sportowa",
+              "objects": [
+                {"level3Code":"BUSP01","level3Name":"basen odkryty"},{"level3Code":"BUSP02","level3Name":"basen z czaszą foliową"},
+                {"level3Code":"BUSP03","level3Name":"bieżnia"},{"level3Code":"BUSP04","level3Name":"kort tenisowy"},
+                {"level3Code":"BUSP05","level3Name":"kort tenisowy z czaszą foliową"},{"level3Code":"BUSP06","level3Name":"plac gier i zabaw"},
+                {"level3Code":"BUSP07","level3Name":"plac sportowy"},{"level3Code":"BUSP08","level3Name":"skocznia narciarska"},
+                {"level3Code":"BUSP09","level3Name":"stadion"},{"level3Code":"BUSP10","level3Name":"sztuczny stok"},
+                {"level3Code":"BUSP11","level3Name":"tor samochodowy"},{"level3Code":"BUSP12","level3Name":"tor saneczkowy"},
+                {"level3Code":"BUSP13","level3Name":"tor żużlowy"}
+              ]
+            },
+            { "level2Code": "BUWT", "level2Name": "wysoka budowla techniczna",
+              "objects": [
+                {"level3Code":"BUWT01","level3Name":"chłodnia kominowa"},{"level3Code":"BUWT02","level3Name":"komin przemysłowy"},
+                {"level3Code":"BUWT03","level3Name":"maszt oświetleniowy"},{"level3Code":"BUWT04","level3Name":"maszt telekomunikacyjny"},
+                {"level3Code":"BUWT05","level3Name":"turbina wiatrowa"},{"level3Code":"BUWT06","level3Name":"słup energetyczny"},
+                {"level3Code":"BUWT07","level3Name":"podpora kolei linowej"},{"level3Code":"BUWT08","level3Name":"wieża ciśnień"},
+                {"level3Code":"BUWT09","level3Name":"wieża przeciwpożarowa"},{"level3Code":"BUWT10","level3Name":"wieża szybu kopalnianego"},
+                {"level3Code":"BUWT11","level3Name":"wieża telekomunikacyjna"},{"level3Code":"BUWT12","level3Name":"wieża widokowa"}
+              ]
+            },
+            { "level2Code": "BUZT", "level2Name": "zbiornik techniczny",
+              "objects": [
+                {"level3Code":"BUZT01","level3Name":"osadnik"},{"level3Code":"BUZT02","level3Name":"zbiornik na ciecz"},
+                {"level3Code":"BUZT03","level3Name":"zbiornik na materiały pędne lub gaz"},{"level3Code":"BUZT04","level3Name":"zbiornik na materiały sypkie"}
+              ]
+            },
+            { "level2Code": "BUUO", "level2Name": "umocnienie drogowe, kolejowe i wodne",
+              "objects": [
+                {"level3Code":"BUUO01","level3Name":"falochron"},{"level3Code":"BUUO02","level3Name":"ostroga"},
+                {"level3Code":"BUUO03","level3Name":"ściana oporowa"},{"level3Code":"BUUO04","level3Name":"umocnienie brzegu"}
+              ]
+            },
+            { "level2Code": "BUZM", "level2Name": "budowla ziemna",
+              "objects": [
+                {"level3Code":"BUZM01","level3Name":"fosa sucha lub wykop"},
+                {"level3Code":"BUZM02","level3Name":"nasyp"},
+                {"level3Code":"BUZM03","level3Name":"wał przeciwpowodziowy lub grobla"}
+              ]
+            },
+            { "level2Code": "BUTR", "level2Name": "urządzenie transportowe",
+              "objects": [
+                {"level3Code":"BUTR01","level3Name":"kolej linowa"},{"level3Code":"BUTR02","level3Name":"obrotnica kolejowa"},
+                {"level3Code":"BUTR03","level3Name":"suwnica"},{"level3Code":"BUTR04","level3Name":"taśmociąg"},
+                {"level3Code":"BUTR05","level3Name":"wyciąg narciarski"}
+              ]
+            },
+            { "level2Code": "BUIT", "level2Name": "inne urządzenie techniczne",
+              "objects": [
+                {"level3Code":"BUIT01","level3Name":"szyb naftowy lub gazowy"},{"level3Code":"BUIT02","level3Name":"ujęcie wody"},
+                {"level3Code":"BUIT03","level3Name":"transformator"},{"level3Code":"BUIT04","level3Name":"zespół transformatorów"},
+                {"level3Code":"BUIT05","level3Name":"zespół dystrybutorów paliwa"},
+                {"level3Code":"BUIT06","level3Name":"zespół urządzeń stacji meteorologicznej"},
+                {"level3Code":"BUIT07","level3Name":"zespół urządzeń terminalu ropy naftowej lub materiałów ropopochodnych"}
+              ]
+            },
+            { "level2Code": "BUCM", "level2Name": "budowla cmentarna",
+              "objects": [{"level3Code":"BUCM01","level3Name":"zespół nagrobków cmentarnych"}] },
+            { "level2Code": "BUIB", "level2Name": "inna budowla",
+              "objects": [
+                {"level3Code":"BUIB01","level3Name":"estrada"},{"level3Code":"BUIB02","level3Name":"ogrodzenie trwałe"},
+                {"level3Code":"BUIB03","level3Name":"peron kolejowy"},{"level3Code":"BUIB04","level3Name":"platforma widokowa"},
+                {"level3Code":"BUIB05","level3Name":"rampa"},{"level3Code":"BUIB06","level3Name":"trybuna"}
+              ]
+            }
+          ]
+        },
+        {
+          "level1Code": "KU", "level1Name": "kompleksy użytkowania terenu",
+          "classes": [
+            { "level2Code": "KUMN", "level2Name": "kompleks mieszkaniowy",
+              "objects": [{"level3Code":"KUMN01","level3Name":"osiedle mieszkaniowe"},{"level3Code":"KUMN02","level3Name":"posesja"}] },
+            { "level2Code": "KUPG", "level2Name": "kompleks przemysłowo-gospodarczy",
+              "objects": [
+                {"level3Code":"KUPG01","level3Name":"elektrociepłownia"},{"level3Code":"KUPG02","level3Name":"elektrownia"},
+                {"level3Code":"KUPG03","level3Name":"gazownia"},{"level3Code":"KUPG04","level3Name":"gospodarstwo hodowlane"},
+                {"level3Code":"KUPG05","level3Name":"huta"},{"level3Code":"KUPG06","level3Name":"kopalnia"},
+                {"level3Code":"KUPG07","level3Name":"oczyszczalnia ścieków"},{"level3Code":"KUPG08","level3Name":"podstacja elektroenergetyczna"},
+                {"level3Code":"KUPG09","level3Name":"przepompownia"},{"level3Code":"KUPG10","level3Name":"rafineria"},
+                {"level3Code":"KUPG11","level3Name":"składowisko odpadów"},{"level3Code":"KUPG12","level3Name":"teren ujęcia wody"},
+                {"level3Code":"KUPG13","level3Name":"zakład metalurgiczny"},{"level3Code":"KUPG14","level3Name":"zakład produkcyjny, usługowy lub remontowy"},
+                {"level3Code":"KUPG15","level3Name":"zakład utylizacji"},{"level3Code":"KUPG16","level3Name":"zakład wodociągowy"}
+              ]
+            },
+            { "level2Code": "KUHU", "level2Name": "kompleks handlowo-usługowy",
+              "objects": [{"level3Code":"KUHU01","level3Name":"centrum handlowo-usługowe"},{"level3Code":"KUHU02","level3Name":"targowisko lub bazar"}] },
+            { "level2Code": "KUKO", "level2Name": "kompleks komunikacyjny",
+              "objects": [
+                {"level3Code":"KUKO01","level3Name":"dworzec autobusowy"},{"level3Code":"KUKO02","level3Name":"lotnisko lub lądowisko"},
+                {"level3Code":"KUKO03","level3Name":"miejsce obsługi podróżnych"},{"level3Code":"KUKO04","level3Name":"parking"},
+                {"level3Code":"KUKO05","level3Name":"port wodny lub przystań"},{"level3Code":"KUKO06","level3Name":"stacja kolejowa"},
+                {"level3Code":"KUKO07","level3Name":"stacja metra"},{"level3Code":"KUKO08","level3Name":"stacja paliw"},
+                {"level3Code":"KUKO09","level3Name":"teren kolejowy"},{"level3Code":"KUKO10","level3Name":"zajezdnia lub baza transportowa"}
+              ]
+            },
+            { "level2Code": "KUSK", "level2Name": "kompleks sportowy i rekreacyjny",
+              "objects": [
+                {"level3Code":"KUSK01","level3Name":"ogród botaniczny"},{"level3Code":"KUSK02","level3Name":"ogród zoologiczny"},
+                {"level3Code":"KUSK03","level3Name":"ośrodek sportowo-rekreacyjny"},{"level3Code":"KUSK04","level3Name":"park"},
+                {"level3Code":"KUSK05","level3Name":"zespół domów letniskowych"}
+              ]
+            },
+            { "level2Code": "KUHO", "level2Name": "kompleks usług hotelarskich",
+              "objects": [
+                {"level3Code":"KUHO01","level3Name":"hotel lub motel"},{"level3Code":"KUHO02","level3Name":"kemping"},
+                {"level3Code":"KUHO03","level3Name":"ośrodek wypoczynkowy"},{"level3Code":"KUHO04","level3Name":"schronisko turystyczne"}
+              ]
+            },
+            { "level2Code": "KUOS", "level2Name": "kompleks oświatowy",
+              "objects": [
+                {"level3Code":"KUOS01","level3Name":"ośrodek naukowo-badawczy"},{"level3Code":"KUOS02","level3Name":"przedszkole lub żłobek"},
+                {"level3Code":"KUOS03","level3Name":"szkoła lub zespół szkół"},{"level3Code":"KUOS04","level3Name":"szkoła wyższa"}
+              ]
+            },
+            { "level2Code": "KUOZ", "level2Name": "kompleks ochrony zdrowia i opieki społecznej",
+              "objects": [{"level3Code":"KUOZ01","level3Name":"zakład opieki socjalnej lub dom dziecka"},{"level3Code":"KUOZ02","level3Name":"zespół szpitalny lub sanatoryjny"}] },
+            { "level2Code": "KUZA", "level2Name": "kompleks zabytkowo-historyczny",
+              "objects": [
+                {"level3Code":"KUZA01","level3Name":"miejsce pamięci narodowej"},{"level3Code":"KUZA02","level3Name":"skansen"},
+                {"level3Code":"KUZA03","level3Name":"twierdza lub forteca"},{"level3Code":"KUZA04","level3Name":"zespół muzealny"},
+                {"level3Code":"KUZA05","level3Name":"zespół pałacowy"},{"level3Code":"KUZA06","level3Name":"zespół zamkowy"}
+              ]
+            },
+            { "level2Code": "KUSC", "level2Name": "kompleks sakralny i cmentarz",
+              "objects": [{"level3Code":"KUSC01","level3Name":"cmentarz"},{"level3Code":"KUSC02","level3Name":"zespół sakralny lub klasztorny"}] },
+            { "level2Code": "KUIK", "level2Name": "inny kompleks użytkowania terenu",
+              "objects": [{"level3Code":"KUIK01","level3Name":"poligon wojskowy"},{"level3Code":"KUIK02","level3Name":"zakład specjalny"}] }
+          ]
+        },
+        {
+          "level1Code": "TC", "level1Name": "tereny chronione",
+          "classes": [
+            { "level2Code": "TCON", "level2Name": "obszar Natura 2000",
+              "objects": [{"level3Code":"TCON01","level3Name":"obszar Natura 2000"}] },
+            { "level2Code": "TCPK", "level2Name": "park krajobrazowy",
+              "objects": [{"level3Code":"TCPK01","level3Name":"park krajobrazowy"}] },
+            { "level2Code": "TCPN", "level2Name": "park narodowy",
+              "objects": [{"level3Code":"TCPN01","level3Name":"park narodowy"}] },
+            { "level2Code": "TCRZ", "level2Name": "rezerwat",
+              "objects": [{"level3Code":"TCRZ01","level3Name":"rezerwat"}] }
+          ]
+        },
+        {
+          "level1Code": "AD", "level1Name": "jednostki podziału terytorialnego",
+          "classes": [
+            { "level2Code": "ADJA", "level2Name": "jednostka podziału administracyjnego",
+              "objects": [
+                {"level3Code":"ADJA01","level3Name":"państwo"},{"level3Code":"ADJA02","level3Name":"województwo"},
+                {"level3Code":"ADJA03","level3Name":"powiat"},{"level3Code":"ADJA04","level3Name":"gmina miejska"},
+                {"level3Code":"ADJA05","level3Name":"gmina wiejska"},{"level3Code":"ADJA06","level3Name":"gmina miejsko-wiejska"},
+                {"level3Code":"ADJA07","level3Name":"miasto w gminie miejsko-wiejskiej"},
+                {"level3Code":"ADJA08","level3Name":"obszar wiejski w gminie miejsko-wiejskiej"},
+                {"level3Code":"ADJA09","level3Name":"dzielnica"},{"level3Code":"ADJA10","level3Name":"delegatura"}
+              ]
+            },
+            { "level2Code": "ADMS", "level2Name": "miejscowość",
+              "objects": [
+                {"level3Code":"ADMS01","level3Name":"miasto"},{"level3Code":"ADMS02","level3Name":"część miasta"},
+                {"level3Code":"ADMS03","level3Name":"wieś"},{"level3Code":"ADMS04","level3Name":"część wsi"},
+                {"level3Code":"ADMS05","level3Name":"kolonia"},{"level3Code":"ADMS06","level3Name":"część kolonii"},
+                {"level3Code":"ADMS07","level3Name":"osada"},{"level3Code":"ADMS08","level3Name":"część osady"},
+                {"level3Code":"ADMS09","level3Name":"osiedle"},{"level3Code":"ADMS10","level3Name":"przysiółek"},
+                {"level3Code":"ADMS11","level3Name":"leśniczówka"},{"level3Code":"ADMS12","level3Name":"gajówka"},
+                {"level3Code":"ADMS13","level3Name":"inny obiekt"}
+              ]
+            }
+          ]
+        },
+        {
+          "level1Code": "OI", "level1Name": "obiekty inne",
+          "classes": [
+            { "level2Code": "OIPR", "level2Name": "obiekt przyrodniczy",
+              "objects": [
+                {"level3Code":"OIPR01","level3Name":"drzewo lub grupa drzew"},
+                {"level3Code":"OIPR02","level3Name":"głaz narzutowy lub grupa głazów"},
+                {"level3Code":"OIPR03","level3Name":"kępa krzewów"},{"level3Code":"OIPR04","level3Name":"kępa kosodrzewiny"},
+                {"level3Code":"OIPR05","level3Name":"linia oddziałowa"},{"level3Code":"OIPR06","level3Name":"mały las"},
+                {"level3Code":"OIPR07","level3Name":"odosobniona skała"},{"level3Code":"OIPR08","level3Name":"pas krzewów lub żywopłot"},
+                {"level3Code":"OIPR09","level3Name":"próg skalny"},{"level3Code":"OIPR10","level3Name":"rząd drzew"},
+                {"level3Code":"OIPR11","level3Name":"wejście do jaskini"},{"level3Code":"OIPR12","level3Name":"wodospad"},
+                {"level3Code":"OIPR13","level3Name":"źródło"}
+              ]
+            },
+            { "level2Code": "OIKM", "level2Name": "obiekt związany z komunikacją",
+              "objects": [
+                {"level3Code":"OIKM01","level3Name":"ekran akustyczny"},{"level3Code":"OIKM02","level3Name":"pas startowy"},
+                {"level3Code":"OIKM03","level3Name":"przejście graniczne"},
+                {"level3Code":"OIKM04","level3Name":"przystanek autobusowy lub tramwajowy"},
+                {"level3Code":"OIKM05","level3Name":"przystanek kolejowy"},{"level3Code":"OIKM06","level3Name":"schody"},
+                {"level3Code":"OIKM07","level3Name":"sygnalizator świetlny"},{"level3Code":"OIKM08","level3Name":"wejście do stacji metra"},
+                {"level3Code":"OIKM09","level3Name":"miejsce poboru opłat"}
+              ]
+            },
+            { "level2Code": "OIOR", "level2Name": "obiekty o znaczeniu orientacyjnym w terenie",
+              "objects": [
+                {"level3Code":"OIOR01","level3Name":"bunkier lub schron"},
+                {"level3Code":"OIOR02","level3Name":"figura, kapliczka lub krzyż przydrożny"},
+                {"level3Code":"OIOR03","level3Name":"fontanna"},{"level3Code":"OIOR04","level3Name":"mur historyczny"},
+                {"level3Code":"OIOR05","level3Name":"odosobniona mogiła"},{"level3Code":"OIOR06","level3Name":"pomnik"},
+                {"level3Code":"OIOR07","level3Name":"pomost lub molo"},{"level3Code":"OIOR08","level3Name":"ruina zabytkowa"},
+                {"level3Code":"OIOR09","level3Name":"studnia głębinowa"},
+                {"level3Code":"OIOR10","level3Name":"szklarnia (niebędąca budynkiem)"},
+                {"level3Code":"OIOR11","level3Name":"wiata lub altana"},
+                {"level3Code":"OIOR12","level3Name":"wiatrak (niebędący budynkiem)"},
+                {"level3Code":"OIOR13","level3Name":"wieża obserwacyjna"},{"level3Code":"OIOR14","level3Name":"wodowskaz"}
+              ]
+            },
+            { "level2Code": "OIMK", "level2Name": "mokradło",
+              "objects": [{"level3Code":"OIMK01","level3Name":"bagno"},{"level3Code":"OIMK02","level3Name":"teren podmokły"}] },
+            { "level2Code": "OISZ", "level2Name": "szuwary",
+              "objects": [{"level3Code":"OISZ01","level3Name":"szuwary"}] }
+          ]
+        }
+      ]
+    },
+
+    "lookupTables": {
+      "type": "object",
+      "description": "Reference and intersection tables",
+      "properties": {
+        "OT_ulica":         { "type": "array", "items": { "$ref": "#/definitions/OT_ulica" } },
+        "OT_WezelKolejowy": { "type": "array", "items": { "$ref": "#/definitions/OT_WezelKolejowy" } },
+        "OT_ZbiornikWodny": { "type": "array", "items": { "$ref": "#/definitions/OT_ZbiornikWodny" } },
+        "OT_SzlakDrogowy":  { "type": "array", "items": { "$ref": "#/definitions/OT_SzlakDrogowy" } },
+        "OT_LiniaKolejowa": { "type": "array", "items": { "$ref": "#/definitions/OT_LiniaKolejowa" } },
+        "OT_Ciek":          { "type": "array", "items": { "$ref": "#/definitions/OT_Ciek" } },
+        "intTorLinia":      { "type": "array", "items": { "$ref": "#/definitions/intTorLinia" } },
+        "intJezdnSzlak":    { "type": "array", "items": { "$ref": "#/definitions/intJezdnSzlak" } },
+        "intDrogaSzlak":    { "type": "array", "items": { "$ref": "#/definitions/intDrogaSzlak" } },
+        "intDrogaJezdnia":  { "type": "array", "items": { "$ref": "#/definitions/intDrogaJezdnia" } },
+        "intBUBDFunSz":     { "type": "array", "items": { "$ref": "#/definitions/intBUBDFunSz" } }
+      }
+    },
+
+    "dataEntryRules": {
+      "type": "array",
+      "description": "Rules and geometric constraints for entering objects into the database",
+      "items": {
+        "type": "object",
+        "properties": {
+          "classOrCategory": { "type": "string" },
+          "rules":           { "type": "array", "items": { "type": "string" } },
+          "constraints":     { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "default": [
+        {
+          "classOrCategory": "PTWP_A – wody powierzchniowe",
+          "rules": [
+            "Obszar zdefiniowany przez linię brzegową przy normalnym stanie wody",
+            "Wprowadza się wszystkie wyspy",
+            "Nie wydziela się ławic piaszczystych śródrzecznych pozbawionych roślinności"
+          ],
+          "constraints": [
+            "Minimalna szerokość: 5 m",
+            "Minimalna powierzchnia zbiorników: 80 m²",
+            "Małe sztuczne zbiorniki → klasa OT_BUZT"
+          ]
+        },
+        {
+          "classOrCategory": "PTZB_A – zabudowa",
+          "rules": [
+            "Zwarta: zabudowa stanowi ≥80% terenu",
+            "Gęsta: ≥3 budynki w odległości ≤30 m",
+            "Luźna: ≥3 zagospodarowane działki stykające się"
+          ],
+          "constraints": [
+            "Minimalna powierzchnia zabudowy luźnej: 2000 m²",
+            "Działka <1000 m² bez budynku może być włączona"
+          ]
+        },
+        {
+          "classOrCategory": "PTLZ_A – tereny leśne lub zadrzewione",
+          "rules": [],
+          "constraints": [
+            "Minimalna szerokość: 10 m",
+            "Minimalna długość: 40 m",
+            "Zagajnik w lesie: min 2000 m²; na obrzeżach: min 1000 m²",
+            "Grupy drzew <1000 m² → klasa OT_OIPR"
+          ]
+        },
+        {
+          "classOrCategory": "PTRK_A – roślinność krzewiasta",
+          "rules": [],
+          "constraints": [
+            "Minimalna powierzchnia: 1000 m²",
+            "Wzdłuż rzek: ≥1000 m² i ≥15 m szerokości",
+            "W lesie: ≥2000 m²",
+            "<1000 m² → punktowe OT_OIPR"
+          ]
+        },
+        {
+          "classOrCategory": "PTUT_A – uprawy trwałe",
+          "rules": [],
+          "constraints": [
+            "Minimalna powierzchnia: 1000 m²",
+            "Minimalna szerokość: 10 m"
+          ]
+        },
+        {
+          "classOrCategory": "PTTR_A – roślinność trawiasta i uprawa rolna",
+          "rules": [],
+          "constraints": [
+            "Minimalna powierzchnia: 1000 m²",
+            "Minimalna szerokość: 15 m",
+            "Między jezdniami/rondami: min 500 m², min 5 m szerokości"
+          ]
+        },
+        {
+          "classOrCategory": "PTKM_A – tereny komunikacyjne",
+          "rules": [
+            "Wydzielenie uzupełniające; ciągłość przebiegu zachowana w miarę możliwości"
+          ],
+          "constraints": [
+            "Minimalna szerokość: 10 m (całość terenu komunikacyjnego)",
+            "Przy zwężeniu: min 5 m"
+          ]
+        },
+        {
+          "classOrCategory": "PTGN – grunty nieużytkowane",
+          "rules": [],
+          "constraints": [
+            "Minimalna powierzchnia: 1000 m²",
+            "Minimalna szerokość: 15 m"
+          ]
+        },
+        {
+          "classOrCategory": "PTPL_A – place",
+          "rules": [],
+          "constraints": [
+            "Minimalna powierzchnia: 1000 m²",
+            "Minimalna szerokość: 15 m",
+            "Nie na terenach zakładów przemysłowych <3000 m²"
+          ]
+        },
+        {
+          "classOrCategory": "PTSO_A – składowania odpadów",
+          "rules": [],
+          "constraints": ["Minimalna powierzchnia: 1000 m²", "Minimalna szerokość: 15 m"]
+        },
+        {
+          "classOrCategory": "PTWZ_A – wyrobiska i zwałowiska",
+          "rules": [],
+          "constraints": ["Minimalna powierzchnia: 1000 m²", "Minimalna szerokość: 15 m"]
+        },
+        {
+          "classOrCategory": "PTNZ_A – pozostały teren niezabudowany",
+          "rules": [],
+          "constraints": ["Minimalna powierzchnia: 1000 m²", "Minimalna szerokość: 15 m"]
+        },
+        {
+          "classOrCategory": "KU – kompleksy użytkowania terenu",
+          "rules": [
+            "Obiekty jednorodne funkcjonalnie, powierzchniowe",
+            "Posesja ≠ zabudowa powierzchniowo",
+            "Działka bez budynku nie jest posesją"
+          ],
+          "constraints": [
+            "Minimalna powierzchnia: 5000 m²",
+            "Wyodrębnionych istotnych: min 3000 m²",
+            "Minimalna szerokość: 50 m",
+            "Wyjątki bez ograniczeń: posesja, osiedle, oczyszczalnia, podstacja, stacja paliw"
+          ]
+        },
+        {
+          "classOrCategory": "OI – obiekty inne",
+          "rules": ["Obiekty orientacyjne; nie nakładają się z PT i KU"],
+          "constraints": [
+            "Grupa drzew: max 80 m²; odstęp między drzewami min 30 m",
+            "Mały las / skupiska: 80–1000 m²",
+            "Kępy drzew: max 1000 m², min szerokość 10 m; min odstęp 60 m",
+            "Kosodrzewina: max 1000 m²; min odstęp 60 m",
+            "Rzędy drzew: max odstęp 15 m, min długość 40 m",
+            "Pasy krzewów: max szerokość 10 m",
+            "Linie oddziałowe: 2–10 m; >10 m → klasa PT",
+            "Skały: rzut <1000 m², wys. względna >2 m",
+            "Głazy: min wys. 1 m",
+            "Progi skalne: min szerokość 15 m",
+            "Wodospady: min wys. 2 m",
+            "Schody powierzchniowe: min 500 m²",
+            "Bunkry/schrony ≥100 m² → powierzchniowe; mniejsze → punktowe",
+            "Szklarnie niebędące budynkami: min 100 m²",
+            "Wiaty: min 200 m²"
+          ]
+        },
+        {
+          "classOrCategory": "SW – sieć wodna",
+          "rules": [
+            "Segmentacja przy zmianie atrybutu, ujściu dopływu, połączeniu cieków"
+          ],
+          "constraints": [
+            "Min długość stałych cieków: 4 km",
+            "Min długość ramion bocznych: 750 m",
+            "Cieki >5 m szerokości → klasa woda powierzchniowa",
+            "Rowy melioracyjne wzdłuż dróg – nie wizualizuje się bez uzasadnienia"
+          ]
+        },
+        {
+          "classOrCategory": "SKJZ – jezdnia",
+          "rules": [
+            "Segmentacja przy zmianie atrybutu, skrzyżowaniach kolizyjnych, krańcach mostów/tuneli",
+            "Rondo = odcinki między włączeniami a wyłączeniami"
+          ],
+          "constraints": [
+            "Min długość drogi dojazdowej: 50 m",
+            "Min odstęp między drogami polnymi: 100 m",
+            "Jezdnia ≤1000 m w zabudowie wiejskiej nie jest ulicą"
+          ]
+        },
+        {
+          "classOrCategory": "SKTR – tor lub zespół torów",
+          "rules": [
+            "Brak segmentacji przy skrzyżowaniach wielopoziomowych",
+            "Współliniowość z budowlami inżynierskimi i ziemnymi"
+          ],
+          "constraints": [
+            "Tory główne i bocznice: długość >5 km",
+            "Tory zespołu: odstęp ≤5 m"
+          ]
+        },
+        {
+          "classOrCategory": "SKRP – ciąg ruchu pieszego i rowerowego",
+          "rules": [
+            "Segmentacja przy przejściu przez jezdnię i na odcinkach ze schodami"
+          ],
+          "constraints": []
+        },
+        {
+          "classOrCategory": "BU – budynki, budowle i urządzenia",
+          "rules": [
+            "Budowla inżynierska współliniowa z jezdnią/torem/chodnikiem (poza przepustem)",
+            "Zapora współliniowa z geometrią drogi"
+          ],
+          "constraints": [
+            "Budynki niemieszkalne i altany: min 40 m²",
+            "Budynki <40 m² tej samej funkcji agreguje się",
+            "Zapora min. 10 m → reprezentacja powierzchniowa",
+            "Zbiorniki ≥175 m² → powierzchniowe; mniejsze → punktowe",
+            "Ostrogi/falochrony: min 10 m długości",
+            "Ściany oporowe: min 1 m wysokości",
+            "Wały: min 1 m wysokości",
+            "Budowle cmentarne: min 500 m²",
+            "Zespół transformatorów/dystrybutorów ≥1000 m² → powierzchniowe",
+            "Peron/rampa ≥5 m szerokości → powierzchniowe; węższe → liniowe"
+          ]
+        },
+        {
+          "classOrCategory": "SU – sieć uzbrojenia terenu",
+          "rules": [
+            "Segmentacja linii el. przy rozgałęzieniach i transformatorach",
+            "Brak segmentacji przy bezkolizyjnych skrzyżowaniach"
+          ],
+          "constraints": [
+            "Linia napowietrzna: tylko najwyższe i wysokie napięcie",
+            "Rurociągi magistralne benzynowe/naftowe/gazociągi: przekrój >1 m"
+          ]
+        },
+        {
+          "classOrCategory": "AD – podział administracyjny",
+          "rules": ["Dane z Państwowego Rejestru Granic"],
+          "constraints": []
+        },
+        {
+          "classOrCategory": "TC – tereny chronione",
+          "rules": ["Dane z Generalnej Dyrekcji Ochrony Środowiska"],
+          "constraints": []
+        }
+      ]
+    },
+
+    "technicalNotes": {
+      "type": "object",
+      "description": "Technical notes about the BDOT10k database",
+      "properties": {
+        "geometryTypes":            { "type": "array", "items": { "type": "string", "enum": ["Point","LineString","Polygon"] } },
+        "filenameSuffixConvention": { "type": "string", "const": "OT_NAZWA_P=point, OT_NAZWA_L=line, OT_NAZWA_A=polygon" },
+        "noArcs":                   { "type": "boolean", "const": true },
+        "noMultipolygons":          { "type": "boolean", "const": true },
+        "noMultipoints":            { "type": "boolean", "const": true },
+        "coordinatePrecision_m":    { "type": "number", "const": 0.01 },
+        "minVertexDistance_m":      { "type": "number", "const": 2 },
+        "angleAccuracy_deg":        { "type": "number", "const": 1 },
+        "positionalAccuracy_m":     { "type": "object", "properties": { "min": { "type": "number", "const": 1.5 }, "max": { "type": "number", "const": 5.0 } } },
+        "coverageUnit":             { "type": "string", "const": "powiat (county)" },
+        "formats":                  { "type": "array", "items": { "type": "string" }, "default": ["gml","gdb","shp"] },
+        "scale":                    { "type": "string", "const": "1:10000" },
+        "coordinateSystem":         { "type": "string", "const": "PL-UTM" }
+      }
+    }
+  }
+}

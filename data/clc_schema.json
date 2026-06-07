@@ -1,0 +1,186 @@
+[
+  {
+    "code": 1,
+    "name": "Tereny antropogeniczne",
+    "level": 1,
+    "subClasses": [
+      {
+        "code": 11,
+        "name": "Zabudowa miejska",
+        "level": 2,
+        "subClasses": [
+          { "code": 111, "name": "Zabudowa miejska zwarta", "level": 3 },
+          { "code": 112, "name": "Zabudowa miejska luźna", "level": 3 }
+        ]
+      },
+      {
+        "code": 12,
+        "name": "Tereny przemysłowe, handlowe i komunikacyjne",
+        "level": 2,
+        "subClasses": [
+          { "code": 121, "name": "Tereny przemysłowe lub handlowe", "level": 3 },
+          { "code": 122, "name": "Tereny komunikacyjne oraz tereny związane z komunikacją drogową i kolejową", "level": 3 },
+          { "code": 123, "name": "Porty", "level": 3 },
+          { "code": 124, "name": "Lotniska", "level": 3 }
+        ]
+      },
+      {
+        "code": 13,
+        "name": "Kopalnie, wyrobiska i budowy",
+        "level": 2,
+        "subClasses": [
+          { "code": 131, "name": "Miejsca eksploatacji odkrywkowej", "level": 3 },
+          { "code": 132, "name": "Zwałowiska i hałdy", "level": 3 },
+          { "code": 133, "name": "Budowy", "level": 3 }
+        ]
+      },
+      {
+        "code": 14,
+        "name": "Miejskie tereny zielone i wypoczynkowe",
+        "level": 2,
+        "subClasses": [
+          { "code": 141, "name": "Tereny zielone", "level": 3 },
+          { "code": 142, "name": "Tereny sportowe i wypoczynkowe", "level": 3 }
+        ]
+      }
+    ]
+  },
+  {
+    "code": 2,
+    "name": "Tereny rolne",
+    "level": 1,
+    "subClasses": [
+      {
+        "code": 21,
+        "name": "Grunty orne",
+        "level": 2,
+        "subClasses": [
+          { "code": 211, "name": "Grunty orne poza zasięgiem urządzeń nawadniających", "level": 3 },
+          { "code": 212, "name": "Grunty orne stale nawadniane", "level": 3 },
+          { "code": 213, "name": "Pola ryżowe", "level": 3 }
+        ]
+      },
+      {
+        "code": 22,
+        "name": "Uprawy trwałe",
+        "level": 2,
+        "subClasses": [
+          { "code": 221, "name": "Winnice", "level": 3 },
+          { "code": 222, "name": "Sady i plantacje", "level": 3 },
+          { "code": 223, "name": "Gaje oliwne", "level": 3 }
+        ]
+      },
+      {
+        "code": 23,
+        "name": "Łąki i pastwiska",
+        "level": 2,
+        "subClasses": [
+          { "code": 231, "name": "Łąki, pastwiska", "level": 3 }
+        ]
+      },
+      {
+        "code": 24,
+        "name": "Obszary upraw mieszanych",
+        "level": 2,
+        "subClasses": [
+          { "code": 241, "name": "Uprawy jednoroczne i trwałe", "level": 3 },
+          { "code": 242, "name": "Złożone systemy upraw i działek", "level": 3 },
+          { "code": 243, "name": "Tereny zajęte głównie przez rolnictwo z dużym udziałem terenów naturalnych", "level": 3 },
+          { "code": 244, "name": "Tereny rolno-leśne", "level": 3 }
+        ]
+      }
+    ]
+  },
+  {
+    "code": 3,
+    "name": "Lasy i ekosystemy seminaturalne",
+    "level": 1,
+    "subClasses": [
+      {
+        "code": 31,
+        "name": "Lasy",
+        "level": 2,
+        "subClasses": [
+          { "code": 311, "name": "Lasy liściaste", "level": 3 },
+          { "code": 312, "name": "Lasu iglaste", "level": 3 },
+          { "code": 313, "name": "Lasy mieszane", "level": 3 }
+        ]
+      },
+      {
+        "code": 32,
+        "name": "Zespoły roślinności drzewiastej i krzewiastej",
+        "level": 2,
+        "subClasses": [
+          { "code": 321, "name": "Murawy i pastwiska naturalne", "level": 3 },
+          { "code": 322, "name": "Wrzosowiska i zakrzaczenia", "level": 3 },
+          { "code": 323, "name": "Roślinność sucholubna (śródziemnomorska)", "level": 3 },
+          { "code": 324, "name": "Lasy i roślinność krzewiasta w stanie zmian", "level": 3 }
+        ]
+      },
+      {
+        "code": 33,
+        "name": "Tereny otwarte, pozbawione roślinności, lub z rzadkim pokryciem roślinnym",
+        "level": 2,
+        "subClasses": [
+          { "code": 331, "name": "Plaże, wydmy, piaski", "level": 3 },
+          { "code": 332, "name": "Odsłonięte skały", "level": 3 },
+          { "code": 333, "name": "Roślinność rozproszona", "level": 3 },
+          { "code": 334, "name": "Pogorzeliska", "level": 3 },
+          { "code": 335, "name": "Lodowce i wieczne śniegi", "level": 3 }
+        ]
+      }
+    ]
+  },
+  {
+    "code": 4,
+    "name": "Obszary podmokłe",
+    "level": 1,
+    "subClasses": [
+      {
+        "code": 41,
+        "name": "Śródlądowe obszary podmokłe",
+        "level": 2,
+        "subClasses": [
+          { "code": 411, "name": "Bagna śródlądowe", "level": 3 },
+          { "code": 412, "name": "Torfowiska", "level": 3 }
+        ]
+      },
+      {
+        "code": 42,
+        "name": "Przybrzeżne obszary podmokłe",
+        "level": 2,
+        "subClasses": [
+          { "code": 421, "name": "Bagna słone (solniska)", "level": 3 },
+          { "code": 422, "name": "Saliny", "level": 3 },
+          { "code": 423, "name": "Osuchy", "level": 3 }
+        ]
+      }
+    ]
+  },
+  {
+    "code": 5,
+    "name": "Obszary wodne",
+    "level": 1,
+    "subClasses": [
+      {
+        "code": 51,
+        "name": "Wody śródlądowe",
+        "level": 2,
+        "subClasses": [
+          { "code": 511, "name": "Cieki", "level": 3 },
+          { "code": 512, "name": "Zbiorniki wodne", "level": 3 }
+        ]
+      },
+      {
+        "code": 52,
+        "name": "Wody morskie",
+        "level": 2,
+        "subClasses": [
+          { "code": 521, "name": "Laguny", "level": 3 },
+          { "code": 522, "name": "Estuaria", "level": 3 },
+          { "code": 523, "name": "Morza i oceany", "level": 3 }
+        ]
+      }
+    ]
+  }
+]
