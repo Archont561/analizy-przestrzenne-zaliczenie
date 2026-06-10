@@ -1085,3 +1085,267 @@ cache$plot(
 )
 
 logger$stage_done("9. Classification")
+
+# COMPARISON
+
+logger$stage_start("10. Comparison")
+
+# REFERENCE VS PREDICTION
+
+for (src in names(results)) {
+  cache$plot(
+    paste0("plot:10_ref_vs_pred_", src),
+    quote({
+      graphics::par(mfrow = c(1, 2), mar = c(1, 1, 3, 1))
+      
+      helpers$plot_unified(
+        refs[[src]],
+        mapping_dir,
+        main = paste("Reference:", src)
+      )
+      
+      helpers$plot_unified(
+        results[[src]],
+        mapping_dir,
+        main = paste("Prediction:", src)
+      )
+    }),
+    width = 1400,
+    height = 650,
+    description = paste(
+      "Spatial raster side-by-side comparison rendered with terra::plot.",
+      "Shows reference vs prediction for source:",
+      src
+    ),
+    report_expr = quote({
+      ref_freq <- raster_freq_table(
+        refs[[src]],
+        mapping_dir,
+        paste0(src, "_reference")
+      )
+      pred_freq <- raster_freq_table(
+        results[[src]],
+        mapping_dir,
+        paste0(src, "_prediction")
+      )
+      area_cmp <- area_comparison_table(
+        refs[[src]],
+        results[[src]],
+        mapping_dir,
+        src
+      )
+      
+      logger$make_plot_report(
+        title = paste("Reference vs prediction —", src),
+        description = paste(
+          "Reference raster and predicted raster comparison for",
+          src
+        ),
+        inputs = list(reference = refs[[src]]),
+        outputs = list(prediction = results[[src]]),
+        body = list(
+          reference_distribution = ref_freq,
+          prediction_distribution = pred_freq,
+          area_comparison = area_cmp
+        )
+      )
+    })
+  )
+}
+
+# AREA COMPARISON
+
+area_tables <- list()
+
+for (src in names(results)) {
+  area_tables[[src]] <- area_comparison_table(
+    ref = refs[[src]],
+    pred = results[[src]],
+    mapping_dir = mapping_dir,
+    source = src
+  )
+  
+  cache$set(
+    paste0("table:area_comparison:", src, ".csv"),
+    area_tables[[src]]
+  )
+  
+  logger$output(paste0("area_comparison_", src), area_tables[[src]])
+}
+
+for (src in names(area_tables)) {
+  cache$plot(
+    paste0("plot:10_area_comparison_", src),
+    quote({
+      tab <- area_tables[[src]]
+      
+      ylim_max <- max(
+        c(tab$ref_area_km2, tab$pred_area_km2),
+        na.rm = TRUE
+      )
+      
+      mat <- rbind(
+        Reference = tab$ref_area_km2,
+        Prediction = tab$pred_area_km2
+      )
+      
+      graphics::barplot(
+        mat,
+        beside = TRUE,
+        names.arg = tab$class_code,
+        las = 2,
+        col = c("#999999", "#5b9bd5"),
+        main = paste("Area comparison —", src),
+        ylab = "Area [km²]",
+        ylim = c(0, ylim_max * 1.15)
+      )
+      
+      graphics::legend(
+        "topright",
+        legend = c("Reference", "Prediction"),
+        fill = c("#999999", "#5b9bd5"),
+        bty = "n"
+      )
+    }),
+    width = 1200,
+    height = 750,
+    description = paste(
+      "Non-spatial diagnostic chart comparing reference and predicted area per class for",
+      src,
+      ". The text report contains the full comparison table."
+    ),
+    report_expr = quote({
+      logger$make_plot_report(
+        title = paste("Area comparison —", src),
+        description = "Reference vs predicted area per unified class.",
+        body = list(
+          area_comparison = area_tables[[src]]
+        )
+      )
+    })
+  )
+}
+
+# AGREEMENT MAP
+
+agreement_map <- cache$cached(
+  "raster:agreement_map.tif",
+  quote({
+    pred_stack <- do.call(c, unname(results))
+    names(pred_stack) <- names(results)
+    
+    terra::app(
+      pred_stack,
+      function(x) {
+        x <- x[!is.na(x)]
+        
+        if (length(x) == 0) {
+          return(NA_integer_)
+        }
+        
+        length(unique(x))
+      }
+    )
+  })
+)
+
+logger$output("agreement_map", agreement_map)
+
+cache$plot(
+  "plot:10_agreement_map",
+  quote({
+    terra::plot(
+      agreement_map,
+      col = c("#2c7bb6", "#ffffbf", "#d7191c"),
+      main = "Model disagreement\n1 = all agree, 3 = all different"
+    )
+  }),
+  width = 1000,
+  height = 850,
+  description = paste(
+    "Spatial raster plot rendered with terra::plot.",
+    "Each pixel stores the number of unique predictions among the three models."
+  ),
+  report_expr = quote({
+    freq <- as.data.frame(terra::freq(agreement_map))
+    freq <- freq[!is.na(freq$value), , drop = FALSE]
+    names(freq) <- c("agreement_value", "pixel_count")
+    freq$meaning <- c(
+      "all models agree",
+      "two unique predictions",
+      "three unique predictions"
+    )[match(freq$agreement_value, c(1, 2, 3))]
+    
+    logger$make_plot_report(
+      title = "Model agreement map",
+      description = "Agreement is measured as number of unique class predictions per pixel.",
+      outputs = list(agreement_map = agreement_map),
+      body = list(
+        agreement_distribution = freq
+      )
+    )
+  })
+)
+
+# MAJORITY-VOTE ENSEMBLE
+
+ensemble_map <- cache$cached(
+  "raster:ensemble_majority_vote.tif",
+  quote({
+    pred_stack <- do.call(c, unname(results))
+    names(pred_stack) <- names(results)
+    
+    terra::app(
+      pred_stack,
+      function(x) {
+        x <- x[!is.na(x)]
+        
+        if (length(x) == 0) {
+          return(NA_integer_)
+        }
+        
+        tab <- table(x)
+        as.integer(names(tab)[which.max(tab)])
+      }
+    )
+  })
+)
+
+logger$output("ensemble_map", ensemble_map)
+
+cache$plot(
+  "plot:10_ensemble_majority_vote",
+  quote({
+    helpers$plot_unified(
+      ensemble_map,
+      mapping_dir,
+      main = "Ensemble majority vote"
+    )
+  }),
+  width = 1000,
+  height = 850,
+  description = paste(
+    "Spatial raster plot rendered with terra::plot through helpers$plot_unified.",
+    "Each pixel is assigned the majority class among the three model predictions."
+  ),
+  report_expr = quote({
+    logger$make_plot_report(
+      title = "Ensemble majority vote",
+      description = "Per-pixel majority vote from CLC, S2GLC, and BDOT random forest predictions.",
+      outputs = list(ensemble_map = ensemble_map),
+      body = list(
+        ensemble_class_distribution = raster_freq_table(
+          ensemble_map,
+          mapping_dir,
+          "ensemble"
+        )
+      )
+    )
+  })
+)
+
+logger$stage_done("10. Comparison")
+
+# DONE
+
+logger$pipeline_done("success")
