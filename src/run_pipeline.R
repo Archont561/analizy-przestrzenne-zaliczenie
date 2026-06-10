@@ -322,3 +322,219 @@ cache$plot(
 )
 
 logger$stage_done("2. Border")
+
+# LANDSAT DATA
+
+logger$stage_start("3. Landsat")
+
+landsat_manifest <- helpers$download_landsat_raw_bands(
+  cache = cache,
+  border_sf = border_sf,
+  year = year,
+  area_id = teryt,
+  strict_cloud = 2,
+  relaxed_cloud = 10,
+  min_coverage = 0.999,
+  allowed_platforms = c("landsat-8", "landsat-9")
+)
+
+# Log scene summary
+if (!is.null(landsat_manifest$pipeline_metadata)) {
+  meta <- landsat_manifest$pipeline_metadata
+  
+  helpers$log_landsat_scene_summary(
+    items_sf = meta$items_sf,
+    border_sf = border_sf,
+    selected_date = meta$selected_date,
+    cache = cache
+  )
+  
+  cache$plot(
+    "plot:03_landsat_scene_footprints.png",
+    quote({
+      helpers$plot_landsat_scene_coverage(
+        items_sf = meta$items_sf,
+        border_sf = border_sf,
+        selected_date = meta$selected_date,
+        main = paste0(
+          "Landsat scenes — ",
+          meta$selected_date,
+          " (n=",
+          meta$n_scenes,
+          ")"
+        )
+      )
+    }),
+    description = "Scene footprints overlaid on the AOI boundary.",
+    report_expr = quote({
+      logger$make_plot_report(
+        title = paste("Landsat scene footprints —", meta$selected_date),
+        description = "Visual check of multi-scene AOI coverage.",
+        body = list(
+          selected_date = meta$selected_date,
+          n_scenes = meta$n_scenes,
+          scene_ids = meta$scene_ids,
+          coverage_table = meta$coverage_table
+        )
+      )
+    })
+  )
+}
+
+ls_raw_clipped <- cache$cached(
+  paste0("raster:landsat:raw_clipped:", teryt, ":", year, ".tif"),
+  quote({
+    scene_rasters <- lapply(landsat_manifest$scenes, function(scene) {
+      r <- terra::rast(unname(scene$paths))
+      names(r) <- scene$band_names
+      helpers$crop_mask(r, border_sf)
+    })
+    
+    raw_clip <- if (length(scene_rasters) == 1) {
+      scene_rasters[[1]]
+    } else {
+      terra::mosaic(terra::sprc(scene_rasters), fun = "first")
+    }
+    
+    names(raw_clip) <- c("blue", "green", "red", "nir", "swir16")
+    
+    helpers$detect_landsat_mosaic_gaps(
+      landsat_raster = raw_clip,
+      border_sf = border_sf,
+      max_gap_pct = 1.0,
+      cache = cache
+    )
+    
+    helpers$assert_landsat_valid_coverage(
+      landsat_raster = raw_clip,
+      border_sf = border_sf,
+      min_valid_coverage = 0.99,
+      cache = cache
+    )
+    
+    raw_clip
+  })
+)
+
+ls <- cache$cached(
+  paste0("raster:landsat:scaled:", teryt, ":", year, ".tif"),
+  quote({
+    helpers$scale_landsat(
+      ls_raw_clipped,
+      clamp = TRUE,
+      mask_fill = TRUE
+    )
+  })
+)
+
+logger$output("landsat_scaled", ls)
+border_v_ls <- as_border_v(border_sf, ls)
+
+cache$plot(
+  "plot:03_landsat_rgb.png",
+  quote({
+    terra::plotRGB(
+      ls,
+      r = 3,
+      g = 2,
+      b = 1,
+      stretch = "lin",
+      main = paste0("Landsat RGB — scaled reflectance — ", year)
+    )
+    terra::lines(border_v_ls, col = "#ffffff", lwd = 1.5)
+  }),
+  description = paste(
+    "Spatial RGB composite rendered with terra::plotRGB.",
+    "Uses scaled Landsat reflectance bands red, green, and blue."
+  ),
+  report_expr = quote({
+    scene_table <- data.frame(
+      scene_id = names(landsat_manifest$scenes),
+      date = vapply(landsat_manifest$scenes, function(x) x$date, character(1)),
+      stringsAsFactors = FALSE
+    )
+    
+    logger$make_plot_report(
+      title = paste("Landsat RGB —", year),
+      description = "True-color RGB composite using scaled Landsat red, green, and blue bands.",
+      inputs = list(landsat_scaled = ls, border = border_sf),
+      body = list(
+        selected_date = landsat_manifest$best_date,
+        scene_table = scene_table,
+        raster_info = raster_basic_table(ls, "landsat_scaled"),
+        band_statistics = band_stats_table(ls)
+      )
+    )
+  })
+)
+
+cache$plot(
+  "plot:03_landsat_ndvi.png",
+  quote({
+    ndvi <- (ls$nir - ls$red) / (ls$nir + ls$red)
+    
+    terra::plot(
+      ndvi,
+      main = "NDVI",
+      col = terrain.colors(100)
+    )
+    terra::lines(border_v_ls, col = "#333333", lwd = 1)
+  }),
+  description = paste(
+    "Spatial raster map rendered with terra::plot.",
+    "NDVI was calculated as (NIR - RED) / (NIR + RED)."
+  ),
+  report_expr = quote({
+    ndvi <- (ls$nir - ls$red) / (ls$nir + ls$red)
+    
+    logger$make_plot_report(
+      title = "Landsat NDVI",
+      description = "NDVI map derived from scaled Landsat reflectance.",
+      inputs = list(landsat_scaled = ls),
+      outputs = list(ndvi = ndvi),
+      body = list(
+        formula = "(NIR - RED) / (NIR + RED)",
+        ndvi_statistics = band_stats_table(ndvi)
+      )
+    )
+  })
+)
+
+# Non-spatial diagnostic plot: histogram.
+cache$plot(
+  "plot:03_landsat_bands_hist.png",
+  quote({
+    graphics::par(mfrow = c(2, 3), mar = c(3, 3, 2, 1))
+    
+    for (i in seq_len(terra::nlyr(ls))) {
+      vals <- terra::values(ls[[i]], na.rm = TRUE)
+      
+      graphics::hist(
+        vals,
+        breaks = 60,
+        main = names(ls)[i],
+        col = "#5b9bd5",
+        xlab = "Reflectance",
+        ylab = ""
+      )
+    }
+  }),
+  width = 1400,
+  height = 800,
+  description = paste(
+    "Non-spatial diagnostic histograms of scaled reflectance values.",
+    "The text report contains per-band summary statistics."
+  ),
+  report_expr = quote({
+    logger$make_plot_report(
+      title = "Landsat band histograms",
+      description = "Distribution of scaled reflectance values for each Landsat band.",
+      inputs = list(landsat_scaled = ls),
+      body = list(
+        band_statistics = band_stats_table(ls)
+      )
+    )
+  })
+)
+
+logger$stage_done("3. Landsat")
