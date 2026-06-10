@@ -641,7 +641,7 @@ cache$plot(
 
 logger$stage_done("4. CLC")
 
-# S2GLC
+# S2GLC DATA
 
 logger$stage_start("5. S2GLC")
 
@@ -783,3 +783,4 @@ cache$plot(
 )
 
 logger$stage_done("5. S2GLC")
+
