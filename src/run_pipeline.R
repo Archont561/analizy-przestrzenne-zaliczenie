@@ -1028,3 +1028,60 @@ print(accuracy_summary)
 
 logger$stage_done("8. Training Random Forest Models")
 
+# CLASSIFICATION
+
+logger$stage_start("9. Classification")
+
+results <- list()
+
+for (src in names(models)) {
+  results[[src]] <- helpers$classify_raster(
+    cache = cache,
+    model = models[[src]]$model,
+    landsat_raster = ls,
+    ref_type = src,
+    mapping_dir = mapping_dir
+  )
+  
+  logger$output(paste0("pred_", src), results[[src]])
+}
+
+cache$plot(
+  "plot:09_final_classification",
+  quote({
+    graphics::par(mfrow = c(1, length(results)), mar = c(1, 1, 3, 1))
+    
+    for (src in names(results)) {
+      helpers$plot_unified(
+        results[[src]],
+        mapping_dir,
+        main = paste("Pred:", src)
+      )
+    }
+  }),
+  width = 1800,
+  height = 600,
+  description = paste(
+    "Spatial raster classification maps rendered with terra::plot through helpers$plot_unified.",
+    "Each map was predicted by a random forest trained on a different reference source."
+  ),
+  report_expr = quote({
+    pred_table <- do.call(
+      rbind,
+      lapply(names(results), function(src) {
+        raster_freq_table(results[[src]], mapping_dir, src)
+      })
+    )
+    
+    logger$make_plot_report(
+      title = "Final RF classifications",
+      description = "Predicted land-cover maps from CLC-, S2GLC-, and BDOT-trained random forests.",
+      outputs = results,
+      body = list(
+        prediction_class_distribution = pred_table
+      )
+    )
+  })
+)
+
+logger$stage_done("9. Classification")
