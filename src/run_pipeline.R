@@ -932,3 +932,99 @@ cache$plot(
 )
 
 logger$stage_done("7. Preparing Training Samples")
+
+# MODEL TRAINING
+
+logger$stage_start("8. Training Random Forest Models")
+
+models <- list()
+
+for (src in names(samples)) {
+  models[[src]] <- helpers$train_landcover_model(
+    cache = cache,
+    source_name = src,
+    df = samples[[src]],
+    mapping_dir = mapping_dir,
+    train_prop = 0.7,
+    num_trees = 300,
+    seed = 123
+  )
+  
+  logger$metric(paste0(src, "_accuracy"), round(models[[src]]$accuracy, 4))
+  logger$metric(paste0(src, "_kappa"), round(models[[src]]$kappa, 4))
+  logger$metric(paste0(src, "_oob_error"), round(models[[src]]$oob_error, 4))
+  
+  cache$plot(
+    paste0("plot:08_importance_", src),
+    quote({
+      imp <- models[[src]]$importance
+      
+      if (is.null(imp) || length(imp) == 0) {
+        graphics::plot.new()
+        graphics::title(paste("No importance available —", src))
+      } else {
+        imp <- sort(imp, decreasing = TRUE)
+        
+        graphics::par(mar = c(4, 7, 3, 1))
+        
+        graphics::barplot(
+          rev(imp),
+          horiz = TRUE,
+          las = 1,
+          col = "#5b9bd5",
+          main = paste("Variable importance —", src),
+          xlab = "Impurity decrease"
+        )
+      }
+    }),
+    width = 1200,
+    height = 700,
+    description = paste(
+      "Non-spatial model diagnostic chart showing random forest variable importance for",
+      src,
+      ". The text report contains the same values as a table."
+    ),
+    report_expr = quote({
+      logger$make_plot_report(
+        title = paste("Variable importance —", src),
+        description = paste(
+          "Random forest variable importance for",
+          src,
+          "training source."
+        ),
+        body = list(
+          model_metrics = data.frame(
+            source = src,
+            accuracy = models[[src]]$accuracy,
+            kappa = models[[src]]$kappa,
+            oob_error = models[[src]]$oob_error,
+            train_n = models[[src]]$train_n,
+            test_n = models[[src]]$test_n,
+            stringsAsFactors = FALSE
+          ),
+          variable_importance = importance_table(models[[src]], src),
+          confusion_matrix = as.data.frame.matrix(models[[src]]$confusion)
+        )
+      )
+    })
+  )
+}
+
+accuracy_summary <- model_summary_table(models)
+
+cache$set("table:model_performance.csv", accuracy_summary)
+logger$output("model_performance", accuracy_summary)
+
+for (src in names(models)) {
+  cm <- as.data.frame.matrix(models[[src]]$confusion)
+  
+  cache$set(
+    paste0("table:confusion:", src, ".csv"),
+    cm
+  )
+}
+
+print(accuracy_summary)
+
+logger$stage_done("8. Training Random Forest Models")
+
