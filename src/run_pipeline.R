@@ -538,3 +538,105 @@ cache$plot(
 )
 
 logger$stage_done("3. Landsat")
+
+# CLC DATA
+
+logger$stage_start("4. CLC")
+
+clc_sf <- helpers$get_clc_vector(cache, border_sf, area_id = teryt)
+clc_code_col <- "Code_18"
+
+if (!clc_code_col %in% names(clc_sf)) {
+  stop(
+    "Expected CLC code column not found: ",
+    clc_code_col,
+    "\nAvailable columns: ",
+    paste(names(clc_sf), collapse = ", ")
+  )
+}
+
+clc_v <- terra::vect(clc_sf)
+border_v_clc <- as_border_v(border_sf, clc_v)
+
+logger$output("clc_vector", clc_sf)
+
+cache$plot(
+  "plot:04_clc_vector.png",
+  quote({
+    terra::plot(
+      clc_v,
+      clc_code_col,
+      main = "CLC 2018 — wektor",
+      plg = list(title = "Code_18", cex = 0.7)
+    )
+    terra::lines(border_v_clc, col = "#222222", lwd = 1.5)
+  }),
+  width = 1200,
+  height = 1000,
+  description = paste(
+    "Spatial vector plot rendered with terra::plot.",
+    "Shows CLC 2018 polygons clipped to the county border and colored by Code_18."
+  ),
+  report_expr = quote({
+    clc_counts <- as.data.frame(
+      table(clc_sf[[clc_code_col]]),
+      stringsAsFactors = FALSE
+    )
+    names(clc_counts) <- c("Code_18", "polygon_count")
+    clc_counts <- clc_counts[
+      order(clc_counts$polygon_count, decreasing = TRUE),
+    ]
+    
+    logger$make_plot_report(
+      title = "CLC 2018 vector polygons",
+      description = "CLC 2018 polygons clipped to the county border and displayed by Code_18.",
+      inputs = list(clc = clc_sf, border = border_sf),
+      body = list(
+        code_column = clc_code_col,
+        polygon_count = nrow(clc_sf),
+        code_distribution = clc_counts
+      )
+    )
+  })
+)
+
+# Non-spatial diagnostic plot.
+cache$plot(
+  "plot:04_clc_hist.png",
+  quote({
+    tab <- sort(table(clc_sf[[clc_code_col]]), decreasing = TRUE)
+    
+    graphics::barplot(
+      tab,
+      las = 2,
+      cex.names = 0.6,
+      col = "#e69f00",
+      main = "CLC — liczba poligonów per kod",
+      ylab = "n"
+    )
+  }),
+  description = paste(
+    "Non-spatial diagnostic chart of CLC polygon counts.",
+    "The text report contains the same values as a table."
+  ),
+  report_expr = quote({
+    clc_counts <- as.data.frame(
+      table(clc_sf[[clc_code_col]]),
+      stringsAsFactors = FALSE
+    )
+    names(clc_counts) <- c("Code_18", "polygon_count")
+    clc_counts <- clc_counts[
+      order(clc_counts$polygon_count, decreasing = TRUE),
+    ]
+    
+    logger$make_plot_report(
+      title = "CLC Code_18 histogram",
+      description = "Number of CLC polygons per Code_18 value.",
+      body = list(
+        code_distribution = clc_counts
+      )
+    )
+  })
+)
+
+logger$stage_done("4. CLC")
