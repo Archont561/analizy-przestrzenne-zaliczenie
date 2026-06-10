@@ -274,3 +274,51 @@ if (nrow(layer_info) > 0) {
 }
 
 logger$stage_done("1. BDOT10k")
+
+# BORDER
+
+logger$stage_start("2. Border")
+
+border_sf <- helpers$get_bdot10k_borders(cache, teryt)
+border_v <- terra::vect(border_sf)
+
+logger$output("border_sf", border_sf)
+logger$diagnostics("border_sf", border_sf)
+
+cache$plot(
+  "plot:02_border.png",
+  quote({
+    terra::plot(
+      border_v,
+      col = "#e0e0e0",
+      border = "#333333",
+      lwd = 2,
+      main = paste("Granica powiatu", teryt)
+    )
+  }),
+  description = "Spatial plot created with terra::plot. Shows the extracted county border polygon.",
+  report_expr = quote({
+    bbox <- sf::st_bbox(border_sf)
+    
+    bbox_table <- data.frame(
+      xmin = bbox["xmin"],
+      ymin = bbox["ymin"],
+      xmax = bbox["xmax"],
+      ymax = bbox["ymax"],
+      crs = sf::st_crs(border_sf)$input,
+      stringsAsFactors = FALSE
+    )
+    
+    logger$make_plot_report(
+      title = paste("County border —", teryt),
+      description = "Border polygon extracted from BDOT10k and transformed to EPSG:2180.",
+      outputs = list(border = border_sf),
+      body = list(
+        teryt = teryt,
+        bbox_table = bbox_table
+      )
+    )
+  })
+)
+
+logger$stage_done("2. Border")
