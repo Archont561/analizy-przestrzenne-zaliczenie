@@ -640,3 +640,146 @@ cache$plot(
 )
 
 logger$stage_done("4. CLC")
+
+# S2GLC
+
+logger$stage_start("5. S2GLC")
+
+s2glc_covs <- helpers$get_s2glc_wcs_coverages(cache)
+
+logger$log(
+  "s2glc_coverages",
+  ns = logger$namespaces$DATA,
+  msg = paste0(
+    "Available coverages: ",
+    paste(s2glc_covs$coverage_id, collapse = ", ")
+  )
+)
+
+s2glc_r <- helpers$get_s2glc_polsa(
+  cache = cache,
+  border_sf = border_sf,
+  year = year,
+  area_id = teryt,
+  mapping_dir = mapping_dir
+)
+
+raw_key <- paste0(
+  "file:s2glc:wcs_raw:",
+  teryt,
+  ":",
+  year,
+  ":Land_use_classification_",
+  year,
+  ".tif"
+)
+
+rgb_raster <- terra::rast(cache$path(raw_key))
+
+logger$output("s2glc_raster", s2glc_r)
+
+n_classified <- as.numeric(
+  terra::global(!is.na(s2glc_r), "sum", na.rm = TRUE)[1, 1]
+)
+n_total <- terra::ncell(s2glc_r)
+
+logger$metric(
+  "s2glc_valid_pixel_pct",
+  round(100 * n_classified / n_total, 2),
+  ns = logger$namespaces$DATA
+)
+
+cache$plot(
+  "plot:05_s2glc_rgb.png",
+  quote({
+    terra::plotRGB(
+      rgb_raster,
+      r = 1,
+      g = 2,
+      b = 3,
+      main = paste0("S2GLC ", year, " — raw RGB")
+    )
+  }),
+  description = paste(
+    "Spatial RGB raster rendered with terra::plotRGB.",
+    "This is the raw POLSA WCS TIFF before RGB-to-class decoding."
+  ),
+  report_expr = quote({
+    logger$make_plot_report(
+      title = paste("S2GLC raw RGB —", year),
+      description = "Raw RGB land-cover image downloaded from POLSA WCS.",
+      inputs = list(rgb_raster = rgb_raster),
+      body = list(
+        coverage_id = paste0("Land_use_classification_", year),
+        raster_info = raster_basic_table(rgb_raster, "s2glc_rgb"),
+        unique_rgb_sample = rgb_unique_sample_table(rgb_raster)
+      )
+    )
+  })
+)
+
+cache$plot(
+  "plot:05_s2glc_classes.png",
+  quote({
+    helpers$plot_s2glc_classes(
+      s2glc_r,
+      mapping_dir,
+      main = paste0("S2GLC ", year, " — klasy POLSA")
+    )
+  }),
+  description = paste(
+    "Spatial categorical raster plot rendered through terra::plot.",
+    "RGB pixels were decoded into original S2GLC class IDs and labelled with Polish class names."
+  ),
+  report_expr = quote({
+    logger$make_plot_report(
+      title = paste("S2GLC classes —", year),
+      description = "Categorical S2GLC raster decoded from POLSA RGB colors.",
+      inputs = list(s2glc = s2glc_r),
+      body = list(
+        valid_pixels = n_classified,
+        total_pixels = n_total,
+        valid_pixel_pct = round(100 * n_classified / n_total, 2),
+        class_distribution = s2glc_freq_table(s2glc_r, mapping_dir)
+      )
+    )
+  })
+)
+
+# Non-spatial diagnostic plot.
+cache$plot(
+  "plot:05_s2glc_hist.png",
+  quote({
+    freq <- s2glc_freq_table(s2glc_r, mapping_dir)
+    
+    if (nrow(freq) == 0) {
+      graphics::plot.new()
+      graphics::title("S2GLC — no valid pixels")
+    } else {
+      graphics::barplot(
+        freq$count,
+        names.arg = freq$value,
+        las = 2,
+        cex.names = 0.8,
+        col = "#009e73",
+        main = paste0("S2GLC ", year, " — pikseli per klasa"),
+        ylab = "n"
+      )
+    }
+  }),
+  description = paste(
+    "Non-spatial diagnostic chart of S2GLC pixel counts by class.",
+    "The text report contains IDs, class names, counts, and area."
+  ),
+  report_expr = quote({
+    logger$make_plot_report(
+      title = paste("S2GLC class histogram —", year),
+      description = "Pixel counts and area by S2GLC class.",
+      body = list(
+        class_distribution = s2glc_freq_table(s2glc_r, mapping_dir)
+      )
+    )
+  })
+)
+
+logger$stage_done("5. S2GLC")
