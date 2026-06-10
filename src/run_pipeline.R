@@ -855,3 +855,80 @@ cache$plot(
 )
 
 logger$stage_done("6. Reclassifying to Unified Schema")
+
+# TRAINING SAMPLES
+
+logger$stage_start("7. Preparing Training Samples")
+
+refs <- list(
+  CLC = ref_clc,
+  S2GLC = ref_s2glc,
+  BDOT = ref_bdot
+)
+
+samples <- list()
+
+for (src in names(refs)) {
+  samples[[src]] <- helpers$prepare_training_samples(
+    cache = cache,
+    source_name = src,
+    landsat_raster = ls,
+    ref_raster = refs[[src]],
+    sample_n = 50000,
+    min_per_class = 200,
+    seed = 123
+  )
+  
+  logger$output(paste0("samples_", src), samples[[src]])
+  
+  dist <- sample_distribution_table(samples[[src]], src)
+  
+  cache$set(
+    paste0("table:dist:", src, ".csv"),
+    dist
+  )
+}
+
+cache$plot(
+  "plot:07_sample_distributions",
+  quote({
+    graphics::par(mfrow = c(1, length(samples)), mar = c(6, 4, 3, 1))
+    
+    for (src in names(samples)) {
+      tab <- table(samples[[src]]$class_value)
+      
+      graphics::barplot(
+        tab,
+        las = 2,
+        cex.names = 0.8,
+        col = "#5b9bd5",
+        main = paste("Samples:", src),
+        ylab = "n"
+      )
+    }
+  }),
+  width = 1800,
+  height = 650,
+  description = paste(
+    "Non-spatial diagnostic chart showing class counts in stratified training samples.",
+    "The text report contains the exact sample distribution table."
+  ),
+  report_expr = quote({
+    dist_table <- do.call(
+      rbind,
+      lapply(names(samples), function(src) {
+        sample_distribution_table(samples[[src]], src)
+      })
+    )
+    
+    logger$make_plot_report(
+      title = "Training sample distributions",
+      description = "Stratified training sample counts per source and unified class.",
+      body = list(
+        sample_distribution = dist_table
+      )
+    )
+  })
+)
+
+logger$stage_done("7. Preparing Training Samples")
