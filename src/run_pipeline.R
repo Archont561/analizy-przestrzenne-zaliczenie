@@ -784,3 +784,74 @@ cache$plot(
 
 logger$stage_done("5. S2GLC")
 
+# RECLASSIFICATION
+
+logger$stage_start("6. Reclassifying to Unified Schema")
+
+ref_clc <- helpers$reclassify_clc(
+  cache = cache,
+  border_sf = border_sf,
+  landsat_raster = ls,
+  mapping_dir = mapping_dir,
+  area_id = teryt
+)
+
+ref_s2glc <- helpers$reclassify_s2glc(
+  cache = cache,
+  landsat_raster = ls,
+  mapping_dir = mapping_dir,
+  year = year,
+  area_id = teryt
+)
+
+ref_bdot <- helpers$reclassify_bdot(
+  cache = cache,
+  border_sf = border_sf,
+  landsat_raster = ls,
+  teryt = teryt,
+  mapping_dir = mapping_dir
+)
+
+logger$output("ref_clc", ref_clc)
+logger$output("ref_s2glc", ref_s2glc)
+logger$output("ref_bdot", ref_bdot)
+
+cache$plot(
+  "plot:06_reference_comparison",
+  quote({
+    graphics::par(mfrow = c(1, 3), mar = c(1, 1, 3, 1))
+    
+    helpers$plot_unified(ref_clc, mapping_dir, main = "Ref: CLC")
+    helpers$plot_unified(ref_s2glc, mapping_dir, main = "Ref: S2GLC")
+    helpers$plot_unified(ref_bdot, mapping_dir, main = "Ref: BDOT")
+  }),
+  width = 1800,
+  height = 600,
+  description = paste(
+    "Spatial raster comparison rendered with terra::plot through helpers$plot_unified.",
+    "All three sources were reclassified to the unified land-cover schema at Landsat resolution."
+  ),
+  report_expr = quote({
+    comparison_table <- rbind(
+      raster_freq_table(ref_clc, mapping_dir, "CLC"),
+      raster_freq_table(ref_s2glc, mapping_dir, "S2GLC"),
+      raster_freq_table(ref_bdot, mapping_dir, "BDOT")
+    )
+    
+    logger$make_plot_report(
+      title = "Unified reference raster comparison",
+      description = "CLC, S2GLC, and BDOT references reclassified to the same unified schema.",
+      outputs = list(
+        ref_clc = ref_clc,
+        ref_s2glc = ref_s2glc,
+        ref_bdot = ref_bdot
+      ),
+      body = list(
+        unified_schema = unified_meta,
+        class_distribution = comparison_table
+      )
+    )
+  })
+)
+
+logger$stage_done("6. Reclassifying to Unified Schema")
