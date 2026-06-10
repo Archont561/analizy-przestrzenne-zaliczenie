@@ -1,17 +1,577 @@
 ---
-title: "Projekt zaliczeinowy"
+title: "Wpływ źródła danych referencyjnych na klasyfikację nadzorowaną Landsat"
+subtitle: "Porównanie CLC, S2GLC i BDOT10k — powiat tarnowski"
+author: "Eryk Srebrny, Tomasz Wawrzyszko, Maciej Poliszuk"
+date: "today"
 ---
+
+```{r}
+#| label: setup
+#| include: false
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  out.width = "100%"
+)
+
+plot_dir <- "../.cache/plot"
+
+show_plot <- function(name) {
+  path <- file.path(plot_dir, name)
+  if (file.exists(path)) {
+    knitr::include_graphics(path)
+  } else {
+    knitr::asis_output(paste0("> *Brak pliku: `", name, "`*"))
+  }
+}
+```
 
 # Wprowadzenie
 
-Poniżej znajduje się przykładowy kod R w Quarto z użyciem box modułów
+Ten dokument prezentuje **krok po kroku** przebieg potoku (pipeline) klasyfikacji pokrycia terenu dla **powiatu tarnowskiego** (TERYT `1216`). Celem badania jest sprawdzenie, jak wybór **źródła danych referencyjnych** wpływa na wyniki klasyfikacji nadzorowanej obrazów satelitarnych Landsat 8.
+
+Porównujemy trzy niezależne źródła etykiet:
+
+| Źródło | Typ | Rozdzielczość natywna | Pochodzenie |
+|--------|-----|----------------------|-------------|
+| **CLC 2018** | wektor (poligony) | MMU 25 ha | Corine Land Cover (EEA) |
+| **S2GLC 2021** | raster (RGB → klasy) | 10 m | Sentinel-2 (POLSA) |
+| **BDOT10k** | wektor (topografia) | — | GUGiK (geoportal) |
+
+Każde źródło służy jako "prawda" do wytrenowania osobnego modelu **Random Forest**, a następnie porównujemy jakość uzyskanych klasyfikacji.
+
+::: {.callout-note}
+## Parametry uruchomienia
+
+| Parametr | Wartość |
+|----------|---------|
+| **TERYT** | 1216 (powiat tarnowski) |
+| **Rok** | 2021 |
+| **Klasyfikator** | Random Forest (`ranger`, 300 drzew) |
+| **Cechy wejściowe** | 5 pasm Landsat + 3 wskaźniki (NDVI, NDWI, NBR) |
+| **Rozdzielczość docelowa** | 30 m (siatka Landsat) |
+| **Całkowity czas wykonania** | ~17 minut (1012 s) |
+:::
+
+## Zunifikowany schemat klas
+
+Wszystkie trzy źródła mają różne legendy, więc na początku definiujemy wspólny schemat **8 klas**, do którego sprowadzamy każde źródło:
+
+| Wartość | Kod | Nazwa klasy | Kolor |
+|---------|-----|-------------|-------|
+| 1 | ART | Artificial surfaces (tereny zabudowane) | `#E60000` |
+| 2 | AGR | Agriculture (tereny rolne) | `#FFD400` |
+| 3 | GRA | Grassland / Herbaceous (łąki) | `#FFAA00` |
+| 4 | FOR | Forest (lasy) | `#005C00` |
+| 5 | SHR | Shrubland (zarośla) | `#A0D67A` |
+| 6 | BAR | Bare ground (grunty odsłonięte) | `#A6A6A6` |
+| 7 | WET | Wetlands (tereny podmokłe) | `#7AB6F5` |
+| 8 | WAT | Water (woda) | `#0046FF` |
+
+# Etap 1 — BDOT10k {#sec-bdot}
+
+**Co się dzieje:** Pobieramy paczkę topograficzną BDOT10k dla powiatu z serwisu WFS GUGiK, rozpakowujemy archiwum GML i konwertujemy wszystkie warstwy do jednego pliku GeoPackage.
+
+**Wynik:** Z paczki wyodrębniono **66 warstw**. Rozpakowanie i konwersja zajęły ~60 sekund.
 
 ```{r}
-#| label: load-helpers
-box::use(./helpers)
+#| label: fig-bdot
+show_plot("01_bdot_layers.png")
+```
+
+Najliczniejsze warstwy to:
+
+| Warstwa | Liczba obiektów | Typ | Znaczenie |
+|---------|-----------------|-----|-----------|
+| `OT_BUBD_A` | 122 057 | Poligon | Budynki |
+| `OT_OIPR_P` | 47 000 | Punkt | Obiekty inne |
+| `OT_SKJZ_L` | 45 313 | Linia | Jezdnie |
+| `OT_SKDR_L` | 45 051 | Linia | Drogi |
+| `OT_PTZB_A` | 22 348 | Poligon | Tereny zabudowane |
+| `OT_PTTR_A` | 18 338 | Poligon | Roślinność trawiasta |
+| `OT_PTLZ_A` | 10 134 | Poligon | Tereny leśne |
+
+::: {.callout-tip}
+## Dlaczego BDOT najpierw?
+Paczka BDOT10k zawiera również **warstwę granic administracyjnych** (`OT_ADJA`), z której w następnym kroku ekstrahujemy granicę powiatu. Dzięki temu nie potrzebujemy osobnego źródła granic.
+:::
+
+# Etap 2 — Granica powiatu {#sec-border}
+
+**Co się dzieje:** Z warstwy `OT_ADJA` (granice jednostek administracyjnych) wyodrębniamy poligon powiatu po kodzie TERYT, scalamy go (`st_union`) i transformujemy do układu **EPSG:2180** (PUWG 1992).
+
+**Wynik:** Pojedynczy poligon granicy o zasięgu:
+
+| Parametr | Wartość |
+|----------|---------|
+| CRS | EPSG:2180 |
+| xmin / ymin | 619 786 / 208 569 |
+| xmax / ymax | 668 929 / 265 379 |
+| Szerokość × wysokość | ~49 km × ~57 km |
+
+```{r}
+#| label: fig-border
+show_plot("02_border.png")
+```
+
+Granica służy jako **maska przestrzenna** dla wszystkich pozostałych danych — przycinamy do niej zarówno rastry, jak i wektory.
+
+# Etap 3 — Landsat {#sec-landsat}
+
+**Co się dzieje:** Pobieramy sceny Landsat 8 (Collection 2, Level-2) z **Microsoft Planetary Computer STAC API**. Stosujemy trójstopniowy wybór:
+
+1. Filtr platformy — tylko Landsat 8/9 (wykluczamy Landsat 7 z lukami SLC-off)
+2. Filtr zachmurzenia — najpierw `<2%`, fallback `<10%`
+3. **Filtr pokrycia AOI** — suma footprintów scen z danej daty musi pokrywać ≥99.9% obszaru
+
+## Wybór sceny z pełnym pokryciem
+
+::: {.callout-important}
+## Kluczowy problem rozwiązany
+Pojedyncza scena Landsat **nie pokrywała całego powiatu**. Algorytm grupuje sceny po dacie i liczy pokrycie unii footprintów:
+
+| Data | Liczba scen | Pokrycie AOI | Śr. zachmurzenie |
+|------|-------------|--------------|------------------|
+| **2021-06-19** | **2** | **100%** ✓ | 3.64% |
+| 2021-05-09 | 1 | 83% ✗ | 0.12% |
+
+Wybrano **2021-06-19** (2 sceny: path 187, rzędy 025 i 026), bo tylko ta data daje pełne pokrycie. Niższe zachmurzenie sceny majowej nie wystarczyło, bo pokrywała tylko 83% obszaru.
+:::
+
+```{r}
+#| label: fig-footprints
+show_plot("03_landsat_scene_footprints.png")
+```
+
+Po pobraniu wykonano dwie kontrole jakości:
+
+- **Kontrola luk w mozaice**: 0% luk we wszystkich pasmach
+- **Kontrola pokrycia ważnymi pikselami**: 100% (1 574 838 / 1 574 839 komórek)
+
+## Skalowanie reflektancji
+
+Surowe wartości DN konwertujemy do reflektancji powierzchniowej wzorem:
+
+$$\text{SR} = \text{DN} \times 0{,}0000275 - 0{,}2$$
+
+z obcięciem do zakresu [0, 1] i traktowaniem pikseli DN=0 jako brakujących.
+
+```{r}
+#| label: fig-rgb
+show_plot("03_landsat_rgb.png")
+```
+
+Statystyki reflektancji po skalowaniu:
+
+| Pasmo | Min | Średnia | Max |
+|-------|-----|---------|-----|
+| blue | 0 | 0.035 | 0.523 |
+| green | 0 | 0.067 | 0.547 |
+| red | 0 | 0.376 | 1.000 |
+| nir | 0 | 0.055 | 0.569 |
+| swir16 | 0 | 0.186 | 1.000 |
+
+## Wskaźnik NDVI
+
+$$\text{NDVI} = \frac{\text{NIR} - \text{RED}}{\text{NIR} + \text{RED}}$$
+
+```{r}
+#| label: fig-ndvi
+show_plot("03_landsat_ndvi.png")
 ```
 
 ```{r}
-print(helpers$greet("użytkowniku"))
-helpers$create_plot(15)
+#| label: fig-hist
+show_plot("03_landsat_bands_hist.png")
+```
+
+# Etap 4 — CLC {#sec-clc}
+
+**Co się dzieje:** Pobieramy poligony Corine Land Cover 2018 z REST API EEA (ArcGIS MapServer). Ze względu na limity serwera pobieramy w **10 paczkach po 200 obiektów**, a następnie scalamy, walidujemy geometrie i przycinamy do granicy.
+
+**Wynik:** **1108 poligonów** po przycięciu (z 1947 ID znalezionych w bbox).
+
+```{r}
+#| label: fig-clc-vector
+show_plot("04_clc_vector.png")
+```
+
+Najczęstsze kody CLC w powiecie:
+
+| Code_18 | Liczba poligonów | Opis |
+|---------|------------------|------|
+| 243 | 258 | Tereny rolne z roślinnością naturalną |
+| 211 | 234 | Grunty orne |
+| 242 | 154 | Mozaika upraw |
+| 313 | 129 | Lasy mieszane |
+| 112 | 75 | Zabudowa nieciągła |
+
+```{r}
+#| label: fig-clc-hist
+show_plot("04_clc_hist.png")
+```
+
+# Etap 5 — S2GLC {#sec-s2glc}
+
+**Co się dzieje:** Pobieramy dane S2GLC z serwisu **WCS POLSA**. Serwer zwraca raster **RGB**, w którym każdy unikalny kolor odpowiada jednej klasie. Dekodujemy kolory na ID klas metodą najbliższego koloru w przestrzeni RGB.
+
+**Wynik:** Raster 10 m (5681 × 4915 pikseli). **Uwaga: tylko 50.6% pikseli ma przypisaną klasę** — reszta to obszary bez danych (chmury/cienie w oryginalnym przetwarzaniu Sentinel-2).
+
+::: {.panel-tabset}
+
+### Surowy RGB
+
+```{r}
+#| label: fig-s2glc-rgb
+show_plot("05_s2glc_rgb.png")
+```
+
+### Klasy zdekodowane
+
+```{r}
+#| label: fig-s2glc-classes
+show_plot("05_s2glc_classes.png")
+```
+
+:::
+
+Rozkład klas S2GLC (oryginalne klasy POLSA):
+
+| Klasa | Powierzchnia (km²) |
+|-------|--------------------|
+| Roślinność trawiasta | 468.2 |
+| Tereny rolne | 390.9 |
+| Lasy liściaste | 355.9 |
+| Lasy iglaste | 156.7 |
+| Tereny antropogeniczne | 25.3 |
+| Obszary wodne | 14.0 |
+| Tereny podmokłe | 1.9 |
+
+```{r}
+#| label: fig-s2glc-hist
+show_plot("05_s2glc_hist.png")
+```
+
+# Etap 6 — Reklasyfikacja {#sec-reclass}
+
+**Co się dzieje:** Każde z trzech źródeł sprowadzamy do wspólnego schematu 8 klas za pomocą **crosswalków** (tabel przejścia w JSON) i rasteryzujemy na siatkę Landsat 30 m.
+
+```{r}
+#| label: fig-reference
+show_plot("06_reference_comparison.png")
+```
+
+**Wynik — rozkład powierzchni (km²) per źródło:**
+
+| Klasa | CLC | S2GLC | BDOT |
+|-------|-----|-------|------|
+| ART (zabudowa) | 89.8 | 25.4 | 262.8 |
+| AGR (rolne) | 935.6 | 391.1 | 18.1 |
+| GRA (łąki) | — | 467.9 | — |
+| FOR (lasy) | 349.7 | 512.7 | — |
+| SHR (zarośla) | 16.4 | — | 6.4 |
+| BAR (odsłonięte) | 4.7 | — | 6.1 |
+| WET (podmokłe) | — | 2.0 | 2.6 |
+| WAT (woda) | 21.2 | 13.9 | 125.5 |
+
+::: {.callout-important}
+## Każde źródło widzi inny krajobraz
+- **CLC** brakuje klas GRA i WET — łączy łąki z terenami rolnymi
+- **S2GLC** brakuje klas SHR i BAR — nie rozróżnia zarośli ani gruntów odsłoniętych
+- **BDOT** brakuje klas GRA i FOR w crosswalku, ale ma **dużo więcej zabudowy i wody** (dane topograficzne są precyzyjne dla obiektów antropogenicznych)
+
+To pokrycie tłumaczy późniejsze różnice w jakości modeli.
+:::
+
+# Etap 7 — Próbkowanie {#sec-sampling}
+
+**Co się dzieje:** Stosujemy **stratyfikowane próbkowanie losowe** — pobieramy do ~8333 pikseli z każdej klasy (lub mniej, jeśli klasa jest rzadka). Stratyfikacja zapobiega dominacji klas większościowych.
+
+**Wynik:** Łączna liczba próbek: CLC = 46 847, S2GLC = 43 862, BDOT = 41 783.
+
+```{r}
+#| label: fig-samples
+show_plot("07_sample_distributions.png")
+```
+
+Rozkład próbek (widać klasy rzadkie, których nie da się dopełnić do 8333):
+
+| Źródło | Klasy pełne (8333) | Klasy rzadkie |
+|--------|--------------------|--------------|
+| CLC | ART, AGR, FOR, SHR, WAT | BAR (5182) |
+| S2GLC | ART, AGR, GRA, FOR, WAT | WET (2197) |
+| BDOT | ART, AGR, WAT | SHR (7058), BAR (6803), WET (2923) |
+
+# Etap 8 — Trening modeli {#sec-training}
+
+**Co się dzieje:** Dla każdego źródła trenujemy osobny model Random Forest (300 drzew) na podziale 70/30 (trening/test) ze stratyfikacją.
+
+## Wyniki — duża różnica między źródłami
+
+| Źródło | Accuracy | Kappa | OOB Error | Klasy |
+|--------|----------|-------|-----------|-------|
+| **S2GLC** | **0.812** | **0.770** | **0.186** | 6 |
+| CLC | 0.599 | 0.515 | 0.398 | 6 |
+| BDOT | 0.552 | 0.450 | 0.446 | 6 |
+
+::: {.callout-tip}
+## S2GLC zdecydowanie wygrywa
+**S2GLC osiąga 81% dokładności i Kappa 0.77** — wynik bardzo dobry. To dlatego, że:
+
+- pochodzi z **tego samego roku** co Landsat (2021)
+- bazuje na **Sentinel-2 (10 m)**, więc etykiety są spójne z sygnałem spektralnym
+- jego klasy (lasy, łąki, rola) są **dobrze separowalne spektralnie**
+
+CLC i BDOT wypadają słabiej, bo ich definicje klas nie pokrywają się tak dobrze z tym, co "widzi" Landsat.
+:::
+
+## Istotność cech
+
+We wszystkich modelach kluczowe są **pasmo czerwone, NBR i NDVI** — wskaźniki wegetacyjne i podczerwień.
+
+::: {.panel-tabset}
+
+### S2GLC (najlepszy)
+
+```{r}
+#| label: fig-imp-s2glc
+show_plot("08_importance_S2GLC.png")
+```
+
+Kolejność: NBR > red > SWIR16 > NDVI
+
+### CLC
+
+```{r}
+#| label: fig-imp-clc
+show_plot("08_importance_CLC.png")
+```
+
+Kolejność: red > NBR > NIR > NDVI
+
+### BDOT
+
+```{r}
+#| label: fig-imp-bdot
+show_plot("08_importance_BDOT.png")
+```
+
+Kolejność: NDWI > NIR > NDVI > NBR
+
+:::
+
+## Interpretacja macierzy pomyłek
+
+- **S2GLC**: dobra separacja lasów (FOR) i wody (WAT); pewne mylenie AGR↔GRA
+- **CLC**: silne mylenie AGR↔SHR↔FOR (definicje klas się nakładają)
+- **BDOT**: mylenie AGR↔WAT (mała próba klas naturalnych)
+
+# Etap 9 — Klasyfikacja {#sec-classification}
+
+**Co się dzieje:** Każdy wytrenowany model aplikujemy do **całego obrazu Landsat** (~1.57 mln ważnych pikseli). To najdłuższy etap — predykcja zajęła ~7 minut łącznie (CLC: 153s, S2GLC: 118s, BDOT: 138s).
+
+```{r}
+#| label: fig-final
+show_plot("09_final_classification.png")
+```
+
+**Wynik — przewidziana powierzchnia (km²):**
+
+| Klasa | CLC | S2GLC | BDOT |
+|-------|-----|-------|------|
+| ART | 274.4 | 73.7 | 360.6 |
+| AGR | 555.3 | 375.9 | 416.1 |
+| GRA | — | 454.2 | — |
+| FOR | 306.0 | 489.7 | — |
+| SHR | 218.3 | — | 113.3 |
+| BAR | 15.3 | — | 66.6 |
+| WET | — | 9.3 | 30.7 |
+| WAT | 48.1 | 14.5 | 429.9 |
+
+# Etap 10 — Porównanie {#sec-comparison}
+
+## Referencja vs. predykcja
+
+::: {.panel-tabset}
+
+### CLC
+
+```{r}
+#| label: fig-rvp-clc
+show_plot("10_ref_vs_pred_CLC.png")
+```
+
+### S2GLC
+
+```{r}
+#| label: fig-rvp-s2glc
+show_plot("10_ref_vs_pred_S2GLC.png")
+```
+
+### BDOT
+
+```{r}
+#| label: fig-rvp-bdot
+show_plot("10_ref_vs_pred_BDOT.png")
+```
+
+:::
+
+## Różnice powierzchni
+
+Procentowa różnica między powierzchnią przewidzianą a referencyjną pokazuje **błędy systematyczne** każdego modelu:
+
+::: {.panel-tabset}
+
+### S2GLC (najmniejsze różnice)
+
+```{r}
+#| label: fig-area-s2glc
+show_plot("10_area_comparison_S2GLC.png")
+```
+
+| Klasa | Różnica % |
+|-------|-----------|
+| AGR | -3.9% |
+| FOR | -4.5% |
+| GRA | -2.9% |
+| WAT | +4.2% |
+| ART | +190% |
+| WET | +370% |
+
+Klasy dominujące (AGR, FOR, GRA) mają błąd <5% — bardzo dobrze.
+
+### CLC
+
+```{r}
+#| label: fig-area-clc
+show_plot("10_area_comparison_CLC.png")
+```
+
+| Klasa | Różnica % |
+|-------|-----------|
+| FOR | -12.5% |
+| AGR | -40.6% |
+| ART | +206% |
+| WAT | +127% |
+| SHR | +1234% |
+
+Model CLC zawyża zabudowę i zarośla kosztem terenów rolnych.
+
+### BDOT
+
+```{r}
+#| label: fig-area-bdot
+show_plot("10_area_comparison_BDOT.png")
+```
+
+| Klasa | Różnica % |
+|-------|-----------|
+| ART | +37% |
+| WAT | +243% |
+| AGR | +2201% |
+| SHR | +1684% |
+
+Ogromne różnice — BDOT ma bardzo mało próbek referencyjnych dla klas naturalnych.
+
+:::
+
+## Zgodność modeli
+
+Dla każdego piksela liczymy, ile z trzech modeli przewidziało **tę samą klasę**.
+
+```{r}
+#| label: fig-agreement
+show_plot("10_agreement_map.png")
+```
+
+| Liczba unikalnych predykcji | Piksele | Znaczenie |
+|------------------------------|---------|-----------|
+| 1 | 176 933 | Wszystkie 3 modele zgodne (~11%) |
+| 2 | 999 156 | Dwie różne predykcje (~64%) |
+| 3 | 398 749 | Wszystkie różne (~25%) |
+
+::: {.callout-warning}
+## Niska zgodność = wysoka niepewność
+Tylko **~11% pikseli** jest klasyfikowanych identycznie przez wszystkie trzy modele. Aż **25% pikseli** otrzymuje trzy różne klasy. To bezpośrednio pokazuje, że **wybór źródła referencyjnego ma fundamentalny wpływ** na wynik końcowy.
+:::
+
+## Ensemble — głosowanie większościowe
+
+```{r}
+#| label: fig-ensemble
+show_plot("10_ensemble_majority_vote.png")
+```
+
+Klasyfikacja zespołowa (dominująca klasa z 3 modeli):
+
+| Klasa | Powierzchnia (km²) |
+|-------|--------------------|
+| AGR | 579.9 |
+| FOR | 390.7 |
+| ART | 351.6 |
+| SHR | 51.7 |
+| WAT | 18.8 |
+| GRA | 15.7 |
+| BAR | 8.5 |
+| WET | 0.5 |
+
+# Podsumowanie {#sec-summary}
+
+## Kluczowe wyniki
+
+| Metryka | Wartość |
+|---------|---------|
+| Najlepszy model | **S2GLC** (Acc 0.81, Kappa 0.77) |
+| Najsłabszy model | BDOT (Acc 0.55, Kappa 0.45) |
+| Pełna zgodność (3/3 modeli) | ~11% pikseli |
+| Pełna niezgodność | ~25% pikseli |
+| Najważniejsze cechy | NBR, red, NDVI |
+
+## Wnioski
+
+::: {.callout-tip}
+## Główne obserwacje
+
+1. **Źródło danych referencyjnych decyduje o jakości** — różnica między S2GLC (0.81) a BDOT (0.55) to ponad 25 punktów procentowych dokładności.
+
+2. **S2GLC jest najlepszym źródłem** dla klasyfikacji Landsat, bo pochodzi z tego samego roku, ma wysoką rozdzielczość i spektralnie separowalne klasy.
+
+3. **Dobór sceny Landsat ma ogromne znaczenie** — przejście ze sceny wrześniowej na **czerwcową z pełnym pokryciem AOI** poprawiło dokładność S2GLC z ~0.46 do **0.81**.
+
+4. **Wskaźniki wegetacyjne (NBR, NDVI)** oraz pasmo czerwone to najważniejsze cechy.
+
+5. **Niska zgodność między modelami** (tylko 11% pełnej zgody) potwierdza, że wybór referencji wprowadza dużą niepewność.
+:::
+
+## Ograniczenia
+
+- **S2GLC pokrywa tylko 50.6%** obszaru ważnymi pikselami (luki w danych Sentinel-2)
+- **BDOT i CLC** mają niekompletne pokrycie klas naturalnych w crosswalkach
+- **Jedna data Landsat** (czerwiec) — brak informacji wieloczasowej
+- **Rozdzielczość 30 m** powoduje problem pikseli mieszanych na granicach klas
+
+## Kierunki dalszych badań
+
+1. Kompozyty **wieloczasowe** Landsat (sezonowość roślinności)
+2. Bezpośrednie użycie **Sentinel-2 (10 m)** zamiast Landsat
+3. **Maskowanie chmur** z pasma QA dla pełniejszego pokrycia S2GLC
+4. Rozszerzenie crosswalków BDOT o klasy naturalne (lasy, łąki)
+5. **Walidacja terenowa** dla niezależnej oceny dokładności
+
+## Reprodukowalność
+
+Cały potok jest **w pełni reprodukowalny** dzięki architekturze cache-first:
+
+```bash
+cd src
+Rscript run_pipeline.R       # Pełny pipeline (~17 min od zera)
+Rscript generate_report.R .. # Raport zbiorczy .txt
+quarto render .              # Ten dokument
+```
+
+Każdy etap jest cachowany osobno (`.cache/`), logowany z znacznikiem czasu (`.cache/logs/`), a każdy wykres ma tekstowy opis (`.cache/plot/*.txt`).
 ```
