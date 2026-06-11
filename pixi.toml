@@ -54,3 +54,4 @@ jupyter kernelspec uninstall final-project -f; \
 else \
 rm -rf ~/.local/share/jupyter/kernels/final-project; \
 fi'"""
+pipeline = "cd src/ && Rscript run_pipeline.R"
