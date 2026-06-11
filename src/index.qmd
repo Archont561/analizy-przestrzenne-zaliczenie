@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 
-plot_dir <- "../.cache/plot"
+plot_dir <- ".cache/plot"
 
 show_plot <- function(name) {
   path <- file.path(plot_dir, name)
