@@ -38,6 +38,9 @@ jobs:
           key: pipeline-${{ github.run_id }}
           restore-keys: pipeline-
 
+      - name: Debug cache contents
+        run: find .cache -type f | sort
+
       - name: Render Quarto
         run: pixi run render
       - uses: actions/configure-pages@v5

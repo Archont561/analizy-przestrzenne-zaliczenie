@@ -16,5 +16,6 @@ jobs:
           path: .cache
           key: pipeline-${{ github.run_id }}
           restore-keys: pipeline-
+
       - name: Run pipeline
         run: pixi run pipeline
