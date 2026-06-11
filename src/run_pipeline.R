@@ -4,6 +4,7 @@ box::use(. / helpers)
 
 root <- ".."
 
+options(timeout = 600)
 logger <- helpers$PipelineLogger$new(root)
 cache <- helpers$CacheManager$new(root, logger = logger)
 
